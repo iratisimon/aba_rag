@@ -4,5 +4,6 @@ chromadb
 sentence-transformers
 openai
 python-dotenv
-watchdog
+pymupdf
 plotly
+load_dotenv

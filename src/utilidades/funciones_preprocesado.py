@@ -1,11 +1,15 @@
 """En este script aparecen la sfunciones relacionadas con el preprocesado de los datos 
 que se van a recoger en la base de datos"""
+import json
 import os
 from loguru import logger
 import utils
 import glob
 import fitz  
 from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Lista de categorías
 CATEGORIAS_VALIDAS = [
@@ -14,14 +18,14 @@ CATEGORIAS_VALIDAS = [
     "Ayudas_y_Subvenciones"                
 ]
 # Modelo
-MODELO_CLASIFICADOR = os.getenv("MODELO_FAST", "llama3.2")
+MODELO_CLASIFICADOR = os.getenv("MODELO_FAST", "llama-3.1-8b-instant")
 
 # Configuración de Rutas usando utils
-DATA_DIR = utils.project_root() / "data" / "documentos" / "pdfs"
+DATA_DIR = utils.project_root() /"data"/"documentos"/"pdfs"
 logger.info(f"Ruta de datos: {DATA_DIR}")
 
 # Configuración LLM para clasificación automática
-LLM_API_KEY = os.getenv("LLM_API_KEY", "ollama")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "groq")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
 
 def leer_pdf(ruta_pdf: str) -> str:
@@ -96,6 +100,36 @@ CATEGORIA:"""
     except Exception as e:
         logger.warning(f"Fallo al clasificar {nombre_archivo}: {e}")
         return "General"
+    
+def cargar_metadata(
+    nombre_archivo: str,
+    categoria: str,
+) -> None:
+    metadata_file = utils.project_root() / "data" / "metadataPDF.json"
+    metadata_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Si existe, lo cargamos; si no, empezamos lista vacía
+    if metadata_file.exists():
+        with open(metadata_file, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = []
+    else:
+        data = []
+
+    # Evitar duplicados (por nombre de archivo)
+    data = [item for item in data if item.get("archivo") != nombre_archivo]
+
+    # Añadir / actualizar
+    data.append({
+        "archivo": nombre_archivo,
+        "categoria": categoria
+    })
+
+    # Guardar
+    with open(metadata_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 def main():
     logger.info("Iniciando pre-procesado")
@@ -116,47 +150,15 @@ def main():
         
         texto = leer_pdf(archivo)
         
-        # Caso B: LLM clasifica automáticamente
+        # LLM clasifica automáticamente
         categoria = clasificar_documento(nombre_archivo, texto, client_llm)
-        subcategoria = "General"
         logger.info(f"[LLM] Categoría: {categoria}")
-        
-        # --- ESTRATEGIA PADRE-HIJO ---
-        items_jerarquicos = crear_chunks_jerarquicos(texto)
-        
-        # Preparar batch para Chroma
-        textos_hijos = [item["texto_vectorizable"] for item in items_jerarquicos]
-        metadatas = []
-        ids = []
-        
-        for idx, item in enumerate(items_jerarquicos):
-            metadatas.append({
-                "source": nombre_archivo,
-                "category": categoria,
-                "subcategory": subcategoria, 
-                "type": "child",
-                "parent_id": item["padre_id"],
-                "contexto_expandido": item["texto_completo_padre"]
-            })
-            ids.append(f"{nombre_archivo}_child_{idx}")
-            
-        # Generar Embeddings (Solo de los HIJOS)
-        embeddings = utils.generar_embeddings(model, textos_hijos)
-        
-        # Guardar en DB
-        collection.add(
-            documents=textos_hijos,
-            embeddings=embeddings,
-            metadatas=metadatas,
-            ids=ids
-        )
-        total_chunks += len(ids)
-        logger.info(f"  -> Insertados {len(ids)} chunks hijos (con sus padres ocultos).")
 
-    logger.info("\n" + "="*50)
-    logger.info(f" FINALIZADO. Total indexado: {total_chunks} vectores.")
-    logger.info(f"Colección especial: {COLLECTION_NAME}")
-    logger.info("="*50)
+        cargar_metadata(
+        nombre_archivo=nombre_archivo,
+        categoria=categoria
+        )
+        
 
 if __name__ == "__main__":
     main()

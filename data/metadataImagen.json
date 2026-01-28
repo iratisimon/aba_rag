@@ -1,0 +1,117 @@
+[
+    {
+        "archivo_origen": "alta_seguridad_social.pdf",
+        "nombre_archivo":"alta_seguridad_social__datos_del_solicitante.png",
+        "tema":"datos_del_solicitante",
+        "categoria": "Fiscal"
+    },   
+    {
+        "archivo_origen": "alta_seguridad_social.pdf",
+        "nombre_archivo":"alta_seguridad_social__datos_relativos_a_la_notificacion.png",
+        "tema":"datos_relativos_a_la_notificacion",
+        "categoria": "Fiscal"
+    }, 
+    {
+        "archivo_origen": "alta_seguridad_social.pdf",
+        "nombre_archivo":"alta_seguridad_social__datos_relativos_a_la_solicitud.png",
+        "tema":"datos_relativos_a_la_solicitud",
+        "categoria": "Fiscal"
+    }, 
+    {
+        "archivo_origen": "alta_seguridad_social.pdf",
+        "nombre_archivo":"alta_seguridad_social__resguardo.png",
+        "tema":"resguardo",
+        "categoria": "Fiscal"
+    }, 
+    {
+        "archivo_origen": "alta_seguridad_social.pdf",
+        "nombre_archivo":"alta_seguridad_social__subsanacion_y_o_mejora.png",
+        "tema":"subsanacion_y_o_mejora",
+        "categoria": "Fiscal"
+    }, 
+    {
+        "archivo_origen": "empresario_individual_cese_y_extincion.pdf",
+        "nombre_archivo":"empresario_individual_cese_y_extincion__comunicacion_de_cese_en_otros_registros_y_o_autoridades.png",
+        "tema":"comunicacion_de_cese_en_otros_registros_y_o_autoridades",
+        "categoria": "Laboral"
+    },
+    {
+        "archivo_origen": "empresario_individual_cese_y_extincion.pdf",
+        "nombre_archivo":"empresario_individual_cese_y_extincion__solicitud_de_cancelacion_de_la_inscripcion_y_los_asientos_registrales.png",
+        "tema":"solicitud_de_cancelacion_de_la_inscripcion_y_los_asientos_registrales",
+        "categoria": "Laboral"
+    },
+    {
+        "archivo_origen": "empresario_individual_cese_y_extincion.pdf",
+        "nombre_archivo":"empresario_individual_cese_y_extincion__tramites_para_solicitar_la_baja_de_los_trabajadores_y_la_empresa.png",
+        "tema":"tramites_para_solicitar_la_baja_de_los_trabajadores_y_la_empresa",
+        "categoria": "Laboral"
+    },
+    {
+        "archivo_origen": "empresario_individual_cese_y_extincion.pdf",
+        "nombre_archivo":"empresario_individual_cese_y_extincion__tramites_para_solicitar_la_baja_en_la_agencia_tributaria.png",
+        "tema":"tramites_para_solicitar_la_baja_en_la_agencia_tributaria",
+        "categoria": "Laboral"
+    },
+    {
+        "archivo_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+        "nombre_archivo":"empresario_individual_creacion_y_puesta_en_marcha__tramites_complementarios_a_la_actividad_empresarial.png",
+        "tema":"tramites_complementarios_a_la_actividad_empresarial",
+        "categoria": "Laboral"
+    },
+    {
+        "archivo_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+        "nombre_archivo":"empresario_individual_creacion_y_puesta_en_marcha__tramites_en_el_caso_de_contratar_trabajadores.png",
+        "tema":"tramites_en_el_caso_de_contratar_trabajadores",
+        "categoria": "Laboral"
+    },
+    {
+        "archivo_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+        "nombre_archivo":"empresario_individual_creacion_y_puesta_en_marcha__tramites_generales.png",
+        "tema":"tramites_generales",
+        "categoria": "Laboral"
+    },
+    {
+        "archivo_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+        "nombre_archivo":"empresario_individual_creacion_y_puesta_en_marcha__tramites_para_la_constitucion.png",
+        "tema":"tramites_para_la_constitucion",
+        "categoria": "Laboral"
+    },
+    
+    {
+        "archivo_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+        "nombre_archivo":"empresario_individual_creacion_y_puesta_en_marcha__tramites_que_dependen_de_la_actividad_empresarial.png",
+        "tema":"tramites_que_dependen_de_la_actividad_empresarial",
+        "categoria": "Laboral"
+    },
+    {
+        "archivo_origen": "guia_ayudas_bizkaia.pdf",
+        "nombre_archivo":"guia_ayudas_bizkaia__emprendimiento.png",
+        "tema":"emprendimiento",
+        "categoria": "Ayudas_y_Subvenciones"
+    },
+    {
+        "archivo_origen": "guia_ayudas_bizkaia.pdf",
+        "nombre_archivo":"guia_ayudas_bizkaia__fondos_de_inversion.png",
+        "tema":"fondos_de_inversion",
+        "categoria": "Ayudas_y_Subvenciones"
+    },
+    {
+        "archivo_origen": "guia_ayudas_bizkaia.pdf",
+        "nombre_archivo":"guia_ayudas_bizkaia__innovacion.png",
+        "tema":"innovacion",
+        "categoria": "Ayudas_y_Subvenciones"
+    },
+    {
+        "archivo_origen": "guia_ayudas_bizkaia.pdf",
+        "nombre_archivo":"guia_ayudas_bizkaia__internalizacion.png",
+        "tema":"internalizacion",
+        "categoria": "Ayudas_y_Subvenciones"
+    },
+    {
+        "archivo_origen": "guia_ayudas_bizkaia.pdf",
+        "nombre_archivo":"guia_ayudas_bizkaia__talento.png",
+        "tema":"talento",
+        "categoria": "Ayudas_y_Subvenciones"
+    }
+]
