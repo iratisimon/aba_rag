@@ -14,40 +14,18 @@ from loguru import logger
 
 load_dotenv()
 
-def crear_db(db_path: str = os.getenv("DB_PATH"), collection_name: str = os.getenv("COLLECTION_NAME")):
+def crear_db():
     """
     Crea la base de datos de Chroma.
     """
+    db_path = utils.project_root() / os.getenv("DB_PATH", "chroma_db")
+    collection_texto = os.getenv("COLLECTION_NAME", "autonomos_bizkaia_texto")
+    collection_imagenes = os.getenv("COLLECTION_IMAGENES", "autonomos_bizkaia_imagenes")
+    
+    if not os.path.exists(db_path):
+        os.makedirs(db_path)
+    client = chromadb.PersistentClient(path=db_path)
 
-    logger.info(f"Creando base de datos en {db_path} con colección {collection_name}")
-    # 1. Configurar el cliente de Chroma
-    client = chromadb.PersistentClient(path=utils.project_root() / db_path)
-
-    # 2. Configurar la función de embedding multimodal (CLIP)
-    # Esto permite que texto e imágenes compartan el mismo "espacio"
-    embedding_function = OpenCLIPEmbeddingFunction()
-    image_loader = ImageLoader()
-
-    # 3. Crear la colección multimodal
-    collection = client.get_or_create_collection(
-        name=collection_name,
-        embedding_function=embedding_function,
-        data_loader=image_loader
-    )
-
-    logger.info(f"Base de datos creada con éxito en {db_path} con colección {collection_name}")
-
-    # --- EJEMPLO DE CARGA ---
-
-    # Añadir un texto (ej. normativa del IAE)
-    collection.add(
-        ids=["doc_1"],
-        documents=["Guía sobre el TicketBai en Bizkaia para autónomos..."]
-    )
-
-    # Añadir una imagen (ej. captura de un formulario de la Diputación)
-    # Nota: Debes pasar la ruta de la imagen
-    collection.add(
-        ids=["img_1"],
-        uris=["./imagenes/formulario_modelo_036.png"]
-    )
+    client.get_or_create_collection(name=collection_texto)
+    
+    logger.info("Base de datos creada con éxito")
