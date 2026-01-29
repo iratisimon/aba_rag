@@ -1,0 +1,149 @@
+[
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\ayudas_al_emprendimiento_comercial_merkaekin-2-0.png",
+    "nombre_archivo": "ayudas_al_emprendimiento_comercial_merkaekin-2-0.png",
+    "pdf_origen": "ayudas_al_emprendimiento_comercial_merkaekin.pdf",
+    "categoria": "Ayudas_y_Subvenciones",
+    "pagina": 2
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_cese_y_extincion-5-0.png",
+    "nombre_archivo": "empresario_individual_cese_y_extincion-5-0.png",
+    "pdf_origen": "empresario_individual_cese_y_extincion.pdf",
+    "categoria": "Laboral",
+    "pagina": 5
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_cese_y_extincion-6-0.png",
+    "nombre_archivo": "empresario_individual_cese_y_extincion-6-0.png",
+    "pdf_origen": "empresario_individual_cese_y_extincion.pdf",
+    "categoria": "Laboral",
+    "pagina": 6
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_cese_y_extincion-6-1.png",
+    "nombre_archivo": "empresario_individual_cese_y_extincion-6-1.png",
+    "pdf_origen": "empresario_individual_cese_y_extincion.pdf",
+    "categoria": "Laboral",
+    "pagina": 6
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_cese_y_extincion-7-0.png",
+    "nombre_archivo": "empresario_individual_cese_y_extincion-7-0.png",
+    "pdf_origen": "empresario_individual_cese_y_extincion.pdf",
+    "categoria": "Laboral",
+    "pagina": 7
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_cese_y_extincion-7-1.png",
+    "nombre_archivo": "empresario_individual_cese_y_extincion-7-1.png",
+    "pdf_origen": "empresario_individual_cese_y_extincion.pdf",
+    "categoria": "Laboral",
+    "pagina": 7
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_creacion_y_puesta_en_marcha-16-0.jpeg",
+    "nombre_archivo": "empresario_individual_creacion_y_puesta_en_marcha-16-0.jpeg",
+    "pdf_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+    "categoria": "Laboral",
+    "pagina": 16
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_creacion_y_puesta_en_marcha-23-0.jpeg",
+    "nombre_archivo": "empresario_individual_creacion_y_puesta_en_marcha-23-0.jpeg",
+    "pdf_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+    "categoria": "Laboral",
+    "pagina": 23
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_creacion_y_puesta_en_marcha-23-1.png",
+    "nombre_archivo": "empresario_individual_creacion_y_puesta_en_marcha-23-1.png",
+    "pdf_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+    "categoria": "Laboral",
+    "pagina": 23
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_creacion_y_puesta_en_marcha-24-0.jpeg",
+    "nombre_archivo": "empresario_individual_creacion_y_puesta_en_marcha-24-0.jpeg",
+    "pdf_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+    "categoria": "Laboral",
+    "pagina": 24
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\empresario_individual_creacion_y_puesta_en_marcha-25-0.png",
+    "nombre_archivo": "empresario_individual_creacion_y_puesta_en_marcha-25-0.png",
+    "pdf_origen": "empresario_individual_creacion_y_puesta_en_marcha.pdf",
+    "categoria": "Laboral",
+    "pagina": 25
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\ficha_transicion_digital_bizkaia-2-2.jpeg",
+    "nombre_archivo": "ficha_transicion_digital_bizkaia-2-2.jpeg",
+    "pdf_origen": "ficha_transicion_digital_bizkaia.pdf",
+    "categoria": "Ayudas_y_Subvenciones",
+    "pagina": 2
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\ficha_transicion_digital_bizkaia-3-1.jpeg",
+    "nombre_archivo": "ficha_transicion_digital_bizkaia-3-1.jpeg",
+    "pdf_origen": "ficha_transicion_digital_bizkaia.pdf",
+    "categoria": "Ayudas_y_Subvenciones",
+    "pagina": 3
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\ficha_transicion_digital_bizkaia-3-2.jpeg",
+    "nombre_archivo": "ficha_transicion_digital_bizkaia-3-2.jpeg",
+    "pdf_origen": "ficha_transicion_digital_bizkaia.pdf",
+    "categoria": "Ayudas_y_Subvenciones",
+    "pagina": 3
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\ficha_transicion_digital_bizkaia-3-3.jpeg",
+    "nombre_archivo": "ficha_transicion_digital_bizkaia-3-3.jpeg",
+    "pdf_origen": "ficha_transicion_digital_bizkaia.pdf",
+    "categoria": "Ayudas_y_Subvenciones",
+    "pagina": 3
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\manual_kit_digital-3-1.jpeg",
+    "nombre_archivo": "manual_kit_digital-3-1.jpeg",
+    "pdf_origen": "manual_kit_digital.pdf",
+    "categoria": "Laboral",
+    "pagina": 3
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\manual_kit_digital-4-3.jpeg",
+    "nombre_archivo": "manual_kit_digital-4-3.jpeg",
+    "pdf_origen": "manual_kit_digital.pdf",
+    "categoria": "Laboral",
+    "pagina": 4
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\manual_kit_digital-5-0.jpeg",
+    "nombre_archivo": "manual_kit_digital-5-0.jpeg",
+    "pdf_origen": "manual_kit_digital.pdf",
+    "categoria": "Laboral",
+    "pagina": 5
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\manual_kit_digital-5-2.png",
+    "nombre_archivo": "manual_kit_digital-5-2.png",
+    "pdf_origen": "manual_kit_digital.pdf",
+    "categoria": "Laboral",
+    "pagina": 5
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\manual_kit_digital-8-1.jpeg",
+    "nombre_archivo": "manual_kit_digital-8-1.jpeg",
+    "pdf_origen": "manual_kit_digital.pdf",
+    "categoria": "Laboral",
+    "pagina": 8
+  },
+  {
+    "ruta_imagen": "C:\\Users\\iabd\\Documents\\GitHub\\RAG\\data\\documentos\\imagenes\\manual_kit_digital-8-3.png",
+    "nombre_archivo": "manual_kit_digital-8-3.png",
+    "pdf_origen": "manual_kit_digital.pdf",
+    "categoria": "Laboral",
+    "pagina": 8
+  }
+]
