@@ -14,6 +14,7 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
+import uvicorn
 
 load_dotenv()
 
@@ -282,3 +283,20 @@ async def chat_endpoint(request: PreguntaRequest):
         },
         tiempo_segundos=time.time() - t_start
     )
+
+def ejecutar_api():
+    """Ejecuta la API de RAG para Autónomos Bizkaia"""
+    host = "127.0.0.1" 
+    port = 8000
+    
+    try:
+        logger.info(f"Iniciando servidor en http://{host}:{port}")
+        uvicorn.run(
+            "api.api:app", 
+            host=host, 
+            port=port,
+            reload=True,               
+            workers=1                  
+        )
+    except Exception as e:
+        logger.error(f"Error al iniciar la API: {e}")
