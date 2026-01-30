@@ -2,6 +2,11 @@ from pathlib import Path
 import re
 from loguru import logger
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from typing import List
+
+def generar_embeddings(model, textos: List[str]) -> List[List[float]]:
+    """Genera embeddings usando el modelo SentenceTransformer dado."""
+    return model.encode(textos, normalize_embeddings=True).tolist()
 
 def project_root() -> Path:
     return Path(__file__).resolve().parents[2]

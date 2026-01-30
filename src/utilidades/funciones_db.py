@@ -15,7 +15,7 @@ from utilidades import utils
 import os
 from loguru import logger
 import json
-from funciones_preprocesado import leer_pdf
+from utilidades.funciones_preprocesado import leer_pdf
 
 load_dotenv()
 
@@ -26,6 +26,13 @@ MODELO_BLIP = os.getenv("MODELO_BLIP")
 JSON_DIR = utils.project_root() /"data"
 PDFS_DIR = utils.project_root() /"data"/"documentos"/"pdfs"
 IMAGENES_DIR = utils.project_root() /"data"/"documentos"/"imagenes"
+
+def obtener_coleccion():
+    """
+    Obtiene la colección de la base de datos (sin resetear).
+    """
+    client = chromadb.PersistentClient(path=DB_PATH)
+    return client.get_collection(COLLECTION_NAME)
 
 def cargar_modelos():
     """Carga todos los modelos de IA necesarios."""

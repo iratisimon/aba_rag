@@ -12,6 +12,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 import uvicorn
 from pathlib import Path
+from utilidades import funciones_db
 
 # Agregar src al path para asegurar imports si se ejecuta directamente
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
@@ -23,7 +24,7 @@ load_dotenv()
 
 # Validacion de variables de entorno
 REQUIRED_VARS = [
-    "DB_DIR", "COLLECTION_NAME", "MODELO_EMBEDDINGS", 
+    "DB_PATH", "COLLECTION_NAME", "MODELO_EMBEDDINGS", 
     "LLM_BASE_URL", "LLM_API_KEY", "MODELO_LLM", "MODELO_FAST"
 ]
 
@@ -32,7 +33,7 @@ if missing_vars:
     logger.critical(f"Faltan variables de entorno críticas: {missing_vars}")
     raise RuntimeError(f"Configuración incompleta. Faltan: {missing_vars}")
 
-DB_DIR = os.getenv("DB_DIR")
+DB_PATH = os.getenv("DB_PATH")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 MODELO_EMBEDDINGS = os.getenv("MODELO_EMBEDDINGS")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL")
@@ -94,15 +95,17 @@ def nodo_router(state: GraphState):
         logger.error(f"Error Router: {e}")
         clasificacion = "otros"
 
-    clasificacion = clasificacion.strip().upper()
+    clasificacion = clasificacion.strip()
 
     if clasificacion == "SALUDO":
+        logger.info("[ROUTER] Detectado SALUDO.")
         state["respuesta_final"] = "¡Hola! Estoy aquí para ayudarte con temas de empleo, ayudas, subvenciones y temas fiscales. Pregúntame lo que quieras."
         state["debug_pipeline"].append("[ROUTER] Detectado SALUDO.")
         state["destino"] = "fin"
         return state
 
     cat_final = "otros"
+    logger.info(f"[ROUTER] Clasificado como '{clasificacion}'.")
     for cat in CATEGORIAS_VALIDAS:
         if cat.lower() in clasificacion.lower():
             cat_final = cat
@@ -134,11 +137,14 @@ def nodo_buscador(state: GraphState):
     # Uso de funcion centralizada para obtener coleccion
     col = funciones_db.obtener_coleccion()
     
+    logger.info(f"[BUSCADOR] Buscando documentos por filtro '{filtro}'")
     res = col.query(
         query_embeddings=q_emb,
         n_results=5,     
         where=filtro 
     )
+    state["debug_pipeline"].append(f"[BUSCADOR] Encontrados: {len(res['documents'][0])} documentos.")
+    logger.info(f"[BUSCADOR] Encontrados: {len(res['documents'][0])} documentos.")
     
     docs = res['documents'][0]
     metas = res['metadatas'][0]

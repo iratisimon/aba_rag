@@ -3,9 +3,9 @@ que se van a recoger en la base de datos"""
 import json
 import os
 from loguru import logger
-import utils
+from utilidades import utils
 import glob
-import fitz  
+import fitz
 from openai import OpenAI
 from dotenv import load_dotenv
 
