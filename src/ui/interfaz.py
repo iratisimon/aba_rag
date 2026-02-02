@@ -3,6 +3,7 @@ import sys
 import os
 import asyncio
 from pathlib import Path
+import httpx
 
 # Add src to python path to allow imports from api and utilidades
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -64,6 +65,15 @@ ST_STYLE = """
         margin-bottom: 1rem !important;
         letter-spacing: -0.5px;
     }
+    h4 {
+        background: linear-gradient(135deg, #FC7171 0%, #FFD5D5 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 350 !important;
+        font-size: 2rem !important;
+        letter-spacing: -0.5px;
+        text-align: center !important;
+    }
 
     section[data-testid="stSidebar"] {
         background-color: #FFFFFF !important;
@@ -91,6 +101,7 @@ ST_STYLE = """
         border: 1px solid #FFC9C9;
     }
 
+    
     .ai-bubble {
         background-color: #FFFFFF;
         color: #553333;
@@ -101,6 +112,54 @@ ST_STYLE = """
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         border: 1px solid #FFC9C9;
         border-left: 2px solid #FF6767;
+    }
+    
+    .ai-bubble .content p {
+        margin: 0.5rem 0;
+        line-height: 1.6;
+        color: #553333;
+    }
+    
+    .ai-bubble .content ul, 
+    .ai-bubble .content ol {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+        color: #553333;
+    }
+    
+    .ai-bubble .content li {
+        margin: 0.25rem 0;
+        color: #553333;
+    }
+    
+    .ai-bubble .content strong {
+        color: #2A0F0F;
+        font-weight: 600;
+    }
+    
+    .ai-bubble .content em {
+        color: #694747;
+    }
+    
+    .ai-bubble .content h1, 
+    .ai-bubble .content h2, 
+    .ai-bubble .content h3 {
+        color: #2A0F0F;
+        margin: 0.75rem 0 0.5rem 0;
+    }
+    
+    .sources-container {
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #FFC9C9;
+    }
+
+    /* Evita que burbujas sin texto ocupen espacio o muestren bordes */
+    .ai-bubble:empty, .user-bubble:empty {
+        display: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
     }
     
     /* INPUT FLOTANTE (ADAPTIVE) */
@@ -195,17 +254,33 @@ st.markdown(ST_STYLE, unsafe_allow_html=True)
 
 def render_message(role, content, sources=None):
     """Renderiza un mensaje con estilos HTML personalizados."""
+    if not content or not content.strip():
+        return
+
     if role == "user":
         st.markdown(f'<div class="user-bubble">{content}</div>', unsafe_allow_html=True)
     else:
+        # Convertir markdown a HTML para evitar problemas de anidación
+        import markdown
+        content_html = markdown.markdown(content)
         
-        with st.container():
-            st.markdown(f"""
-            <div class="ai-bubble">
-                <div style="margin-bottom: 10px;">{content}</div>
-                {"".join([f'<a href="#" class="source-chip">{s.get("archivo", "Doc")} ({s.get("chunk_id", "?")})</a>' for s in (sources or [])])}
+        sources_html = ""
+        if sources:
+            sources_html = "".join([
+                f'<a href="#" class="source-chip">{s.get("archivo", "Doc")} ({s.get("chunk_id", "?")})</a>' 
+                for s in sources
+            ])
+            sources_html = f'<div class="sources-container">{sources_html}</div>'
+        
+        full_html = f'''
+        <div class="ai-bubble">
+            <div class="content">
+                {content_html}
             </div>
-            """, unsafe_allow_html=True)
+            {sources_html}
+        </div>
+        '''
+        st.markdown(full_html, unsafe_allow_html=True)
 
 import urllib.request
 import json
@@ -222,128 +297,141 @@ def check_api_health():
         pass
     return "Desconectado"
 
+async def ejecutar_streaming(prompt, chat_container):
+    full_response = ""
+    # Resetear fuentes anteriores para que el sidebar no muestre info vieja
+    st.session_state.last_sources = []
+    
+    with chat_container:
+        # 1. Contenedor para la animación de "Pensando"
+        thinking_placeholder = st.empty()
+        thinking_placeholder.markdown("""
+            <div class="thinking-bubble">
+                <span>Analizando documentos</span>
+                <div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # 2. Crear el placeholder de respuesta SOLO cuando tengamos contenido
+        response_placeholder = None
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            async with client.stream("POST", "http://127.0.0.1:8000/chat/stream", 
+                                   json={"pregunta": prompt}) as response:
+                
+                async for line in response.aiter_lines():
+                    if not line: continue
+                    
+                    if line.startswith("data: "):
+                        token = line.replace("data: ", "")
+                        full_response += token
+                        
+                        # 3. Al recibir el PRIMER TOKEN:
+                        # Borramos la animación de "Pensando" y creamos el placeholder de respuesta
+                        if response_placeholder is None:
+                            thinking_placeholder.empty()  # Limpiar primero
+                            with chat_container:
+                                response_placeholder = st.empty()  # Crear después
+                        
+                        # 4. Convertir markdown a HTML progresivamente durante el streaming
+                        import markdown
+                        content_html = markdown.markdown(full_response)
+                        
+                        # Renderizar con cursor parpadeante
+                        streaming_html = f'''
+                        <div class="ai-bubble">
+                            <div class="content">
+                                {content_html}
+                                <span style="animation: blink 1s infinite;">▌</span>
+                            </div>
+                        </div>
+                        <style>
+                            @keyframes blink {{
+                                0%, 50% {{ opacity: 1; }}
+                                51%, 100% {{ opacity: 0; }}
+                            }}
+                        </style>
+                        '''
+                        response_placeholder.markdown(streaming_html, unsafe_allow_html=True)
+                    
+                    elif line.startswith("metadata: "):
+                        meta_json = json.loads(line.replace("metadata: ", ""))
+                        st.session_state.last_sources = meta_json["fuentes"]
+                        st.session_state.debug_logs.append(meta_json["debug"])
+                        
+        # 5. Finalización: Limpiar placeholders y renderizar mensaje final estático
+        thinking_placeholder.empty()
+        if response_placeholder is not None:
+            response_placeholder.empty()
+        
+        render_message("assistant", full_response, st.session_state.get("last_sources", []))
+        
+        st.session_state.messages.append({
+            "role": "assistant", 
+            "content": full_response,
+            "sources": st.session_state.get("last_sources", [])
+        })
+
+    except Exception as e:
+        thinking_placeholder.empty()
+        st.error(f"Error de comunicación con la API: {e}")
+                    
 def main():
-    st.markdown("<h1>&nbsp;Hola,</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>&nbsp;&nbsp;&nbsp;Hola,</h1>", unsafe_allow_html=True)
     st.markdown("<h2>¿En qué puedo ayudarte?</h2>", unsafe_allow_html=True)
     
-    # Check API Status on load
-    if "api_status" not in st.session_state or st.session_state.api_status.startswith("Conectado"):
+    if "api_status" not in st.session_state:
         st.session_state.api_status = check_api_health()
 
-    # Initialize session state
     if "messages" not in st.session_state:
         st.session_state.messages = []
     
     if "debug_logs" not in st.session_state:
         st.session_state.debug_logs = []
-        
-    if "api_status" not in st.session_state:
-        st.session_state.api_status = "Conectado"
 
-    # --- HISTORIAL ---
-    # Contenedor para scroll
     chat_container = st.container()
     
     with chat_container:
         for msg in st.session_state.messages:
             render_message(msg["role"], msg["content"], msg.get("sources"))
 
-    # --- INPUT ---
     if prompt := st.chat_input("Escribe tu consulta..."):
         with chat_container:
             render_message("user", prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
         
-        # 2. Thinking State + Siri Animation
-        with chat_container:
-            thinking_placeholder = st.empty()
-            siri_style_placeholder = st.empty()
-            
-            # Inyectar CSS para animación SUPER FLUIDA y LIGERA (Solo cambio de color sutil)
-            siri_style_placeholder.markdown("""
-                <style>
-                @keyframes subtlePulse {
-                    0% { background-color: #FCF8F8; }
-                    50% { background-color: #FEF2F2; }
-                    100% { background-color: #FCF8F8; }
-                }
-                .stApp {
-                    animation: subtlePulse 2s infinite ease-in-out;
-                }
-                </style>
-            """, unsafe_allow_html=True)
-                
-            thinking_placeholder.markdown("""
-                <div class="thinking-bubble">
-                    <span style="color: #8B6464; font-size: 0.9rem; font-weight: 500;">Pensando</span>
-                    <div class="thinking-dots">
-                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-
-            try:
-                st.session_state.api_status = "Procesando"
-                inputs = {
-                    "pregunta": prompt,
-                    "historial": st.session_state.messages[:-1], 
-                    "contexto_docs": [],
-                    "contexto_fuentes": [],
-                    "respuesta_final": "",
-                    "debug_pipeline": [],
-                    "destino": None,
-                    "categoria_detectada": "otros"
-                }
-
-                result = asyncio.run(app_graph.ainvoke(inputs))
-                
-                st.session_state.api_status = check_api_health()
-                    
-                response_text = result["respuesta_final"]
-                sources = result.get("contexto_fuentes", [])
-                debug_info = result.get("debug_pipeline", [])
-                    
-                # Stop animations
-                thinking_placeholder.empty()
-                siri_style_placeholder.empty() # Esto devuelve el fondo a la normalidad
-                
-                render_message("assistant", response_text, sources)
-                
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": response_text,
-                    "sources": sources
-                })
-
-                st.session_state.debug_logs.append({
-                    "query": prompt,
-                    "pipeline": debug_info,
-                    "category": result.get("categoria_detectada")
-                })
-
-            except Exception as e:
-                thinking_placeholder.empty()
-                st.session_state.api_status = "Desconectado"
-                st.error(f"Lo siento, ocurrió un error: {e}")
+        # Llamamos a la lógica de streaming asíncrona
+        asyncio.run(ejecutar_streaming(prompt, chat_container))
 
     with st.sidebar:
-        match st.session_state.api_status:
-            case "Conectado":
-                st.success(f"**Estado de la API:** {st.session_state.api_status}")
-            case "Desconectado":
-                st.error(f"**Estado de la API:** {st.session_state.api_status}")
-            case "Procesando":
-                st.warning(f"**Estado de la API:** {st.session_state.api_status}")
+        st.markdown("<h4>Panel de Control</h4>", unsafe_allow_html=True)
+        
+        status_color = f"<span style='color:lime'>{st.session_state.api_status}</span>" if st.session_state.api_status == "Conectado" else f"<span style='color:red'>{st.session_state.api_status}</span>"
+        st.markdown(f"<h5 style='text-align: center;'>API: {status_color}</h5>", unsafe_allow_html=True)
         
         if st.session_state.debug_logs:
             last_log = st.session_state.debug_logs[-1]
-            st.caption(f"**Categoría:** {last_log.get('category')}")
+            cat = last_log.get("categoria", "N/A")
             
-            with st.expander("Traza de Ejecución", expanded=True):
-                for i, step in enumerate(last_log.get("pipeline", [])):
-                    st.caption(f"{i+1}. {step}")
+            st.divider()
+            st.subheader("Análisis del Router")
+            st.info(f"Categoría Detectada: {cat}")
+            
+            st.subheader("Documentos Recuperados")
+            sources = st.session_state.get("last_sources", [])
+            if not sources:
+                st.warning("No se recuperaron documentos de la base de datos.")
+            else:
+                for s in sources:
+                    with st.expander(f"{s['archivo']}"):
+                        st.caption(f"ID: {s['chunk_id']} | Score: {round(s['score'], 3)}")
+            
+            st.subheader("Traza del Grafo")
+            for i, step in enumerate(last_log.get("pipeline", [])):
+                st.caption(f"Step {i+1}: {step}")
         else:
-            st.markdown("*Esperando consultas...*")
+            st.info("Realiza una consulta para ver el flujo de datos.")
 
 if __name__ == "__main__":
     main()
