@@ -80,6 +80,7 @@ class GraphState(TypedDict):
     categoria_detectada: str
     contexto_docs: List[str]
     contexto_fuentes: List[dict]
+    imagenes_relacionadas: List[dict]  # Nuevo campo para imágenes
     respuesta_final: str
     debug_pipeline: List[str]
     destino: Optional[str]
@@ -104,7 +105,7 @@ def generar_hyde(pregunta, client_llm)->str:
 
 def nodo_router(state: GraphState):
     """
-    Nodo router que decide si es saludo o pregunta médica.
+    Nodo router que decide si es saludo o pregunta.
     """
     pregunta = state["pregunta"]
     logger.info(f"[ROUTER] Analizando: {pregunta}")
@@ -147,6 +148,7 @@ def nodo_router(state: GraphState):
 def nodo_buscador(state: GraphState):
     """
     Nodo buscador que aplica filtro por categoría y HyDE.
+    Ahora busca en AMBAS colecciones: texto (PDFs) e imágenes.
     """
     cat = state.get("categoria_detectada", "otros")
     pregunta = state["pregunta"]
@@ -160,24 +162,25 @@ def nodo_buscador(state: GraphState):
 
     q_emb = utils.generar_embeddings(model_emb, [doc_hyde])
     
-    col = funciones_db.obtener_coleccion()
+    # ========== BÚSQUEDA EN COLECCIÓN DE PDFs (TEXTO) ==========
+    col_pdfs = funciones_db.obtener_coleccion("pdfs")
     
-    logger.info(f"[BUSCADOR] Buscando documentos por filtro '{filtro}'")
-    res = col.query(
+    logger.info(f"[BUSCADOR] Buscando documentos de texto por filtro '{filtro}'")
+    res_pdfs = col_pdfs.query(
         query_embeddings=q_emb,
         n_results=5,     
         where=filtro 
     )
-    state["debug_pipeline"].append(f"[BUSCADOR] Encontrados: {len(res['documents'][0])} documentos.")
-    logger.info(f"[BUSCADOR] Encontrados: {len(res['documents'][0])} documentos.")
+    state["debug_pipeline"].append(f"[BUSCADOR] Encontrados: {len(res_pdfs['documents'][0])} documentos de texto.")
+    logger.info(f"[BUSCADOR] Encontrados: {len(res_pdfs['documents'][0])} documentos de texto.")
     
-    docs = res['documents'][0]
-    metas = res['metadatas'][0]
+    docs = res_pdfs['documents'][0]
+    metas = res_pdfs['metadatas'][0]
     
     if not docs and filtro:
         state["debug_pipeline"].append("[BUSCADOR] Nada en esa categoría. Buscando en todo...")
-        res = col.query(query_embeddings=q_emb, n_results=5)
-        docs, metas = res['documents'][0], res['metadatas'][0]
+        res_pdfs = col_pdfs.query(query_embeddings=q_emb, n_results=5)
+        docs, metas = res_pdfs['documents'][0], res_pdfs['metadatas'][0]
 
     state["contexto_docs"] = []
     fuentes = []
@@ -202,6 +205,43 @@ def nodo_buscador(state: GraphState):
             })
 
     state["contexto_fuentes"] = fuentes
+    
+    # ========== BÚSQUEDA EN COLECCIÓN DE IMÁGENES ==========
+    try:
+        col_imagenes = funciones_db.obtener_coleccion("imagenes")
+        
+        logger.info(f"[BUSCADOR] Buscando imágenes por filtro '{filtro}'")
+        res_imagenes = col_imagenes.query(
+            query_embeddings=q_emb,
+            n_results=3,  # Limitamos a 3 imágenes máximo
+            where=filtro
+        )
+        
+        imagenes = []
+        if res_imagenes['metadatas'][0]:
+            for i, meta in enumerate(res_imagenes['metadatas'][0]):
+                # Extraer distancias si están disponibles
+                score = res_imagenes.get('distances', [[0]*len(res_imagenes['metadatas'][0])])[0][i]
+                
+                imagenes.append({
+                    "ruta_imagen": meta.get("ruta_imagen", ""),
+                    "nombre_archivo": meta.get("nombre_archivo", ""),
+                    "pdf_origen": meta.get("pdf_origen", ""),
+                    "pagina": meta.get("pagina", 0),
+                    "score": float(score) if score else 0.0
+                })
+            
+            state["debug_pipeline"].append(f"[BUSCADOR] Encontradas {len(imagenes)} imágenes relacionadas.")
+            logger.info(f"[BUSCADOR] Encontradas {len(imagenes)} imágenes relacionadas.")
+        else:
+            state["debug_pipeline"].append("[BUSCADOR] No se encontraron imágenes relacionadas.")
+        
+        state["imagenes_relacionadas"] = imagenes
+        
+    except Exception as e:
+        logger.warning(f"[BUSCADOR] Error buscando imágenes: {e}")
+        state["imagenes_relacionadas"] = []
+    
     return state
 
 def nodo_reranker(state: GraphState):
@@ -367,9 +407,17 @@ class Fuente(BaseModel):
     score: float
     relevante: bool
 
+class Imagen(BaseModel):
+    ruta_imagen: str
+    nombre_archivo: str
+    pdf_origen: str
+    pagina: int
+    score: float
+
 class RespuestaResponse(BaseModel):
     respuesta: str
     fuentes: List[Fuente]
+    imagenes: List[Imagen]
     debug_info: dict
     tiempo_segundos: float
 
@@ -385,6 +433,7 @@ async def chat_endpoint(request: PreguntaRequest):
         "historial": request.historial,
         "contexto_docs": [],
         "contexto_fuentes": [],
+        "imagenes_relacionadas": [],
         "respuesta_final": "",
         "debug_pipeline": [],
         "destino": None,
@@ -394,6 +443,7 @@ async def chat_endpoint(request: PreguntaRequest):
     return RespuestaResponse(
         respuesta=res["respuesta_final"],
         fuentes=[Fuente(**f) for f in res["contexto_fuentes"]],
+        imagenes=[Imagen(**img) for img in res.get("imagenes_relacionadas", [])],
         debug_info={
             "pipeline": res["debug_pipeline"], 
             "categoria": res.get("categoria_detectada")
@@ -408,6 +458,7 @@ async def chat_streaming_endpoint(request: PreguntaRequest):
         "historial": request.historial,
         "contexto_docs": [],
         "contexto_fuentes": [],
+        "imagenes_relacionadas": [],
         "respuesta_final": "",
         "debug_pipeline": [],
         "destino": None,
@@ -437,6 +488,7 @@ async def chat_streaming_endpoint(request: PreguntaRequest):
         if last_state:
             metadata = {
                 "fuentes": last_state.get("contexto_fuentes", []),
+                "imagenes": last_state.get("imagenes_relacionadas", []),
                 "debug": {
                     "categoria": last_state.get("categoria_detectada"),
                     "pipeline": last_state.get("debug_pipeline")

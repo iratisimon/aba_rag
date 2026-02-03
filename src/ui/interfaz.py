@@ -248,11 +248,59 @@ ST_STYLE = """
         0%, 80%, 100% { transform: scale(0); }
         40% { transform: scale(1); }
     }
+    
+    /* Galería de Imágenes */
+    .image-gallery {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #FFC9C9;
+    }
+    
+    .image-gallery-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #694747;
+        margin-bottom: 0.75rem;
+    }
+    
+    .image-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .image-card {
+        border: 1px solid #FFC9C9;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        background: #FFFFFF;
+    }
+    
+    .image-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .image-card img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        display: block;
+    }
+    
+    .image-caption {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        color: #694747;
+        background: #FFF8F8;
+    }
 </style>
 """
 st.markdown(ST_STYLE, unsafe_allow_html=True)
 
-def render_message(role, content, sources=None):
+def render_message(role, content, sources=None, imagenes=None):
     """Renderiza un mensaje con estilos HTML personalizados."""
     if not content or not content.strip():
         return
@@ -272,12 +320,43 @@ def render_message(role, content, sources=None):
             ])
             sources_html = f'<div class="sources-container">{sources_html}</div>'
         
+        # Galería de imágenes
+        images_html = ""
+        if imagenes and len(imagenes) > 0:
+            images_cards = ""
+            for img in imagenes:
+                ruta = img.get("ruta_imagen", "")
+                nombre = img.get("nombre_archivo", "imagen")
+                pdf_origen = img.get("pdf_origen", "")
+                pagina = img.get("pagina", 0)
+                
+                # Usar st.image después del HTML para mejor compatibilidad
+                # Primero mostramos el HTML y luego usamos columnas de Streamlit
+                images_cards += f'''
+                <div class="image-card">
+                    <img src="{ruta}" alt="{nombre}" />
+                    <div class="image-caption">
+                        📄 {pdf_origen} (p.{pagina})
+                    </div>
+                </div>
+                '''
+            
+            images_html = f'''
+            <div class="image-gallery">
+                <div class="image-gallery-title">🖼️ Imágenes relacionadas ({len(imagenes)})</div>
+                <div class="image-grid">
+                    {images_cards}
+                </div>
+            </div>
+            '''
+        
         full_html = f'''
         <div class="ai-bubble">
             <div class="content">
                 {content_html}
             </div>
             {sources_html}
+            {images_html}
         </div>
         '''
         st.markdown(full_html, unsafe_allow_html=True)
@@ -299,8 +378,9 @@ def check_api_health():
 
 async def ejecutar_streaming(prompt, chat_container):
     full_response = ""
-    # Resetear fuentes anteriores para que el sidebar no muestre info vieja
+    # Resetear fuentes e imágenes anteriores
     st.session_state.last_sources = []
+    st.session_state.last_images = []
     
     with chat_container:
         # 1. Contenedor para la animación de "Pensando"
@@ -357,7 +437,8 @@ async def ejecutar_streaming(prompt, chat_container):
                     
                     elif line.startswith("metadata: "):
                         meta_json = json.loads(line.replace("metadata: ", ""))
-                        st.session_state.last_sources = meta_json["fuentes"]
+                        st.session_state.last_sources = meta_json.get("fuentes", [])
+                        st.session_state.last_images = meta_json.get("imagenes", [])
                         st.session_state.debug_logs.append(meta_json["debug"])
                         
         # 5. Finalización: Limpiar placeholders y renderizar mensaje final estático
@@ -365,12 +446,18 @@ async def ejecutar_streaming(prompt, chat_container):
         if response_placeholder is not None:
             response_placeholder.empty()
         
-        render_message("assistant", full_response, st.session_state.get("last_sources", []))
+        render_message(
+            "assistant", 
+            full_response, 
+            st.session_state.get("last_sources", []),
+            st.session_state.get("last_images", [])
+        )
         
         st.session_state.messages.append({
             "role": "assistant", 
             "content": full_response,
-            "sources": st.session_state.get("last_sources", [])
+            "sources": st.session_state.get("last_sources", []),
+            "imagenes": st.session_state.get("last_images", [])
         })
 
     except Exception as e:
@@ -394,7 +481,12 @@ def main():
     
     with chat_container:
         for msg in st.session_state.messages:
-            render_message(msg["role"], msg["content"], msg.get("sources"))
+            render_message(
+                msg["role"], 
+                msg["content"], 
+                msg.get("sources"),
+                msg.get("imagenes")
+            )
 
     if prompt := st.chat_input("Escribe tu consulta..."):
         with chat_container:
@@ -426,6 +518,20 @@ def main():
                 for s in sources:
                     with st.expander(f"{s['archivo']}"):
                         st.caption(f"ID: {s['chunk_id']} | Score: {round(s['score'], 3)}")
+            
+            # Mostrar información de imágenes
+            imagenes = st.session_state.get("last_images", [])
+            if imagenes:
+                st.subheader(f"🖼️ Imágenes ({len(imagenes)})")
+                for img in imagenes:
+                    with st.expander(f"{img.get('nombre_archivo', 'imagen')}"):
+                        st.caption(f"Origen: {img.get('pdf_origen', 'N/A')}")
+                        st.caption(f"Página: {img.get('pagina', 'N/A')}")
+                        st.caption(f"Score: {round(img.get('score', 0), 3)}")
+                        # Mostrar miniatura si la ruta existe
+                        ruta = img.get("ruta_imagen", "")
+                        if ruta and os.path.exists(ruta):
+                            st.image(ruta, width=150)
             
             st.subheader("Traza del Grafo")
             for i, step in enumerate(last_log.get("pipeline", [])):
