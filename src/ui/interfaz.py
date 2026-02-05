@@ -568,6 +568,32 @@ def main():
             st.subheader("Traza del Grafo")
             for i, step in enumerate(last_log.get("pipeline", [])):
                 st.caption(f"Step {i+1}: {step}")
+            
+            # --- SECCIÓN DE CALIDAD ---
+            metricas = last_log.get("metricas", {})
+            if metricas:
+                st.divider()
+                st.subheader("Métricas de Calidad")
+                
+                c1, c2 = st.columns(2)
+                fidelidad = metricas.get("fidelidad")
+                relevancia = metricas.get("relevancia")
+                
+                with c1:
+                    st.markdown("**Fidelidad**")
+                    if fidelidad == 1:
+                        st.success("✅ Fiel")
+                    else:
+                        st.error("⚠️ Alucinación")
+                        
+                with c2:
+                    st.markdown("**Relevancia**")
+                    if relevancia >= 4:
+                        st.success(f"({relevancia}/5)")
+                    elif relevancia >= 3:
+                        st.warning(f"({relevancia}/5)")
+                    else:
+                        st.error(f"({relevancia}/5)")
         else:
             st.info("Realiza una consulta para ver el flujo de datos.")
 

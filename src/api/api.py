@@ -16,17 +16,14 @@ from sentence_transformers import CrossEncoder
 from contextlib import asynccontextmanager
 from fastapi.responses import StreamingResponse
 import json
+from utilidades import utils, funciones_db, funciones_evaluacion
+from utilidades import prompts
+import torch
+from transformers import CLIPModel, CLIPProcessor
 
 # Agregar src al path para asegurar imports si se ejecuta directamente
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
-
-from utilidades import utils, funciones_db
-from utilidades import prompts
-
 load_dotenv()
-
-import torch
-from transformers import CLIPModel, CLIPProcessor
 
 # Validacion de variables de entorno
 REQUIRED_VARS = [
@@ -99,6 +96,7 @@ class GraphState(TypedDict):
     contexto_fuentes: List[dict]
     imagenes_relacionadas: List[dict]  # Nuevo campo para imágenes
     respuesta_final: str
+    metricas: dict
     debug_pipeline: List[str]
     destino: Optional[str]
 
@@ -113,7 +111,7 @@ async def generar_hyde(pregunta, client_llm)->str:
     Returns:
         str: Respuesta alucinada.
     """
-    system_prompt = prompts.get_hyde_prompt()
+    system_prompt = prompts.obtener_prompt_hyde()
     try:
         r = await client_llm.ainvoke([{"role": "system", "content": system_prompt}, {"role": "user", "content": pregunta}])
         return r.content
@@ -128,7 +126,7 @@ async def nodo_router(state: GraphState):
     logger.info(f"[ROUTER] Analizando: {pregunta}")
     llm = llm_fast
     
-    system_prompt = prompts.get_router_prompt(CATEGORIAS_VALIDAS)
+    system_prompt = prompts.obtener_prompt_router(CATEGORIAS_VALIDAS)
     
     user_prompt =   f"PREGUNTA DEL USUARIO: '{pregunta}'"
 
@@ -345,7 +343,7 @@ async def nodo_evaluador(state: GraphState):
 
     llm = llm_fast
     
-    system_prompt = prompts.get_evaluator_prompt()
+    system_prompt = prompts.obtener_prompt_evaluador()
     
     user_prompt = f"PREGUNTA: {pregunta}\n\nDOCUMENTOS:\n{docs}"
     
@@ -384,7 +382,7 @@ async def nodo_generador(state: GraphState):
         state["respuesta_final"] = "Lo siento, no tengo información suficiente en mis guías para responder a tu pregunta."
         return state
 
-    system_prompt = prompts.get_generator_prompt()
+    system_prompt = prompts.obtener_prompt_generador()
 
     user_prompt =   f"""
                     CONTEXTO RECUPERADO ({state.get('categoria_detectada', 'otros')}):
@@ -411,6 +409,40 @@ async def nodo_generador(state: GraphState):
     state["respuesta_final"] = respuesta.content
     return state
 
+async def nodo_calidad(state: GraphState):
+    """
+    Evalúa la calidad de la respuesta generada (Fidelidad y Relevancia).
+    """
+    state["debug_pipeline"].append("[CALIDAD] Evaluando respuesta generada...")
+    logger.info("[CALIDAD] Evaluando respuesta generada...")
+    
+    pregunta = state["pregunta"]
+    respuesta = state["respuesta_final"]
+    contexto = "\n\n".join(state["contexto_docs"])
+    
+    # Evaluar Fidelidad (¿Alucinaciones?)
+    # Usamos llm_fast para rapidez
+    fidelidad = funciones_evaluacion.evaluar_fidelidad(
+        pregunta, respuesta, contexto, 
+        llm_fast, os.getenv("MODELO_FAST")
+    )
+    
+    # Evaluar Relevancia (¿Responde al user?)
+    relevancia = funciones_evaluacion.evaluar_relevancia(
+        pregunta, respuesta, 
+        llm_fast, os.getenv("MODELO_FAST")
+    )
+    
+    state["metricas"] = {
+        "fidelidad": fidelidad,
+        "relevancia": relevancia
+    }
+    
+    state["debug_pipeline"].append(f"[CALIDAD] Fidelidad: {fidelidad} | Relevancia: {relevancia}")
+    logger.info(f"[CALIDAD] Fidelidad: {fidelidad} | Relevancia: {relevancia}")
+    
+    return state
+
 def construir_grafo():
     workflow = StateGraph(GraphState)               # Inicializamos el grafo
     workflow.add_node("router", nodo_router)        # Agregamos el nodo router
@@ -418,6 +450,7 @@ def construir_grafo():
     workflow.add_node("reranker", nodo_reranker)    # Agregamos el nodo reranker
     workflow.add_node("evaluador", nodo_evaluador)  # Agregamos el nodo evaluador
     workflow.add_node("generador", nodo_generador)  # Agregamos el nodo generador
+    workflow.add_node("calidad", nodo_calidad)      # Agregamos el nodo calidad
 
     workflow.set_entry_point("router")
     workflow.add_conditional_edges(
@@ -439,7 +472,8 @@ def construir_grafo():
         }
     )
 
-    workflow.add_edge("generador", END)
+    workflow.add_edge("generador", "calidad")
+    workflow.add_edge("calidad", END)
     return workflow.compile()
 
 app_graph = construir_grafo()
@@ -485,7 +519,8 @@ async def chat_endpoint(request: PreguntaRequest):
         "respuesta_final": "",
         "debug_pipeline": [],
         "destino": None,
-        "categoria_detectada": "otros"
+        "categoria_detectada": "otros",
+        "metricas": {}
     }
     res = await app_graph.ainvoke(inputs)
     return RespuestaResponse(
@@ -494,7 +529,8 @@ async def chat_endpoint(request: PreguntaRequest):
         imagenes=[Imagen(**img) for img in res.get("imagenes_relacionadas", [])],
         debug_info={
             "pipeline": res["debug_pipeline"], 
-            "categoria": res.get("categoria_detectada")
+            "categoria": res.get("categoria_detectada"),
+            "metricas": res.get("metricas")
         },
         tiempo_segundos=time.time() - t_start
     )
@@ -510,7 +546,8 @@ async def chat_streaming_endpoint(request: PreguntaRequest):
         "respuesta_final": "",
         "debug_pipeline": [],
         "destino": None,
-        "categoria_detectada": "otros"
+        "categoria_detectada": "otros",
+        "metricas": {}
     }
     async def generate():
         last_state = {}
@@ -539,7 +576,8 @@ async def chat_streaming_endpoint(request: PreguntaRequest):
                 "imagenes": last_state.get("imagenes_relacionadas", []),
                 "debug": {
                     "categoria": last_state.get("categoria_detectada"),
-                    "pipeline": last_state.get("debug_pipeline")
+                    "pipeline": last_state.get("debug_pipeline"),
+                    "metricas": last_state.get("metricas", {})
                 }
             }
             yield f"metadata: {json.dumps(metadata)}\n\n"
