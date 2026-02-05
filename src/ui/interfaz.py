@@ -13,7 +13,7 @@ from utilidades import utils
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Asistente Autonomos Bizkaia",
+    page_title="Asistente Autónomos Bizkaia",
     page_icon="🍁",
     layout="wide",
 )
@@ -40,23 +40,31 @@ ST_STYLE = """
     }
 
     .stApp {
-        background-color: #FCF8F8; /* Slate 50 */
+        background-color: #FFFFFF; /* Slate 50 */
         background-image: 
             radial-gradient(circle at 50% 0%, rgba(246 59 59 / 0.05) 0%, transparent 50%);
         background-attachment: fixed;
     }
 
+    .title {
+        max-width: 700px !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 auto !important;
+    }
+
     h1 {
-        background: linear-gradient(135deg, #FF0000 0%, #FC7171 100%);
+        background: linear-gradient(135deg, #FF2E2E   0%, #F96A6A  80%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 250 !important;
         font-size: 2.5rem !important;
         margin-bottom: -1.5rem !important;
         letter-spacing: -0.5px;
+        margin-top: 7rem !important;
     }
     h2 {
-        background: linear-gradient(135deg, #FC7171 0%, #FFD5D5 100%);
+        background: linear-gradient(135deg, #FF2E2E  0%, #F96A6A 80%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 500 !important;
@@ -66,7 +74,7 @@ ST_STYLE = """
         letter-spacing: -0.5px;
     }
     h4 {
-        background: linear-gradient(135deg, #FC7171 0%, #FFD5D5 100%);
+        background: linear-gradient(135deg, #000000  0%, #000000 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 400 !important;
@@ -76,7 +84,7 @@ ST_STYLE = """
         text-align: center !important;
     }
     h5 {
-        background: linear-gradient(135deg, #FC7171 0%, #FFD5D5 100%);
+        background: linear-gradient(135deg, #FF4343  0%, #FF6B6B 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 350 !important;
@@ -87,7 +95,7 @@ ST_STYLE = """
     }
 
     section[data-testid="stSidebar"] {
-        background-color: #FFFFFF !important;
+        background-color: #FFF6F6 !important;
         border-right: 1px solid #F0E2E2; /* Borde gris claro */
         box-shadow: 2px 0 10px rgba(0,0,0,0.03); /* Sombra muy ligera */
     }
@@ -101,7 +109,7 @@ ST_STYLE = """
     }
 
     .user-bubble {
-        background-color: #FFFFFF;
+        background-color: #FFF6F6;
         color: #3B1E1E;
         padding: 1rem 1.5rem;
         border-radius: 18px 18px 4px 18px;
@@ -114,7 +122,7 @@ ST_STYLE = """
 
     
     .ai-bubble {
-        background-color: #FFFFFF;
+        background-color: #FFF6F6;
         color: #553333;
         padding: 1.5rem;
         border-radius: 18px 18px 18px 4px;
@@ -182,7 +190,7 @@ ST_STYLE = """
     
     div[data-testid="stChatInput"] {
         /* Estilo Isla centrado en su contenedor */
-        max-width: 800px !important; 
+        max-width: 700px !important; 
         margin: 0 auto !important;
         
         background: #FFFFFF !important;
@@ -260,6 +268,13 @@ ST_STYLE = """
         40% { transform: scale(1); }
     }
     
+    .image-caption {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        color: #694747;
+        background: #FFF8F8;
+    }
+
     /* Galería de Imágenes */
     .image-gallery {
         margin-top: 1.5rem;
@@ -300,12 +315,92 @@ ST_STYLE = """
         object-fit: cover;
         display: block;
     }
-    
-    .image-caption {
-        padding: 0.5rem;
-        font-size: 0.75rem;
-        color: #694747;
-        background: #FFF8F8;
+
+    /* ESTILOS LANDING GEMINI */
+    .landing-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start; /* Alineación a la izquierda */
+        justify-content: center;
+        margin-top: 20vh;
+        width: 100%;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .landing-title {
+        margin-bottom: 0.5rem !important;
+        text-align: left;
+        width: 100%;
+    }
+
+    .landing-title h1 {
+        margin-top: 0 !important;
+        margin-bottom: -3rem !important;
+        line-height: 1.2;
+        margin-left: 1.3rem !important;
+    }
+
+    .landing-title h2 {
+        margin-top: 0 !important;
+        line-height: 1.2;
+    }
+
+    .suggestions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        max-width: 800px;
+        width: 100%;
+        margin-top: 2rem;
+        padding: 0 1rem;
+    }
+
+    .suggestion-card {
+        background: #FFFFFF;
+        border: 1px solid #E1CBCB;
+        border-radius: 12px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 100px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+
+    /* Estilo para los botones que actúan como tarjetas */
+    .stButton > button {
+        border-radius: 12px !important;
+        border: 1px solid #E1CBCB !important;
+        background-color: #FFFFFF !important;
+        color: #3B1E1E !important;
+        height: auto !important; /* Altura automática */
+        min-height: 45px !important; /* Más pequeños */
+        text-align: left !important;
+        display: flex !important;
+        align-items: center !important;
+        padding: 0.6rem 1rem !important;
+        transition: all 0.3s ease !important;
+        font-weight: 500 !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02) !important;
+    }
+
+    .stButton > button:hover {
+        border-color: #F96A6A !important;
+        background-color: #FFF6F6 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 10px rgba(246, 59, 59, 0.08) !important;
+        color: #A10303 !important;
+    }
+
+    .stButton > button p {
+        font-size: 0.85rem !important;
+        margin: 0 !important;
+        line-height: 1.2 !important;
     }
 </style>
 """
@@ -485,9 +580,6 @@ async def ejecutar_streaming(prompt, chat_container):
         st.error(f"Error de comunicación con la API: {e}")
                     
 def main():
-    st.markdown("<h1>&nbsp;&nbsp;&nbsp;Hola,</h1>", unsafe_allow_html=True)
-    st.markdown("<h2>¿En qué puedo ayudarte?</h2>", unsafe_allow_html=True)
-    
     if "api_status" not in st.session_state:
         st.session_state.api_status = check_api_health()
 
@@ -498,36 +590,120 @@ def main():
         st.session_state.debug_logs = []
 
     chat_container = st.container()
+
+    if len(st.session_state.messages) == 0:
+        # Estilo dinámico para posicionar el input y BLOQUEAR SCROLL
+        st.markdown("""
+            <style>
+                /* ELIMINAR MÁRGENES GLOBALES EN LANDING */
+                .block-container {
+                    padding-top: 0rem !important;
+                    padding-bottom: 0rem !important;
+                }
+                
+                header[data-testid="stHeader"] {
+                    display: none;
+                }
+
+                .main {
+                    overflow: hidden !important;
+                }
+
+                /* RESET DE TÍTULOS SOLO EN LANDING */
+                .full-landing-view h1 {
+                    margin-top: 0 !important;
+                    margin-left: 0 !important;
+                }
+                
+                div[data-testid="stChatInput"] {
+                    bottom: 45vh !important;
+                    z-index: 1000;
+                }
+
+                /* Contenedor principal de la landing */
+                .full-landing-view {
+                    height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    max-width: 700px;
+                    margin: 0 auto;
+                    padding-top: 18vh;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        # Abrimos el contenedor de la vista completa
+        st.markdown('<div class="full-landing-view">', unsafe_allow_html=True)
+        
+        st.markdown('''
+            <div class="landing-title">
+                <h1>Hola,</h1>
+                <h2>¿En qué puedo ayudarte?</h2>
+            </div>
+        ''', unsafe_allow_html=True)
+        
+        # Espacio reservado para el input que está flotando (bottom: 45vh)
+        st.markdown('<div style="height: 10vh;"></div>', unsafe_allow_html=True)
+        
+        # Sugerencias
+        sugerencias = [
+            {"texto": "¿Qué deducciones puedo aplicar como autónomo?"},
+            {"texto": "¿Cómo funciona el IVA trimestral?"},
+            {"texto": "Requisitos para el alta en el RETA"},
+            {"texto": "Ayudas para nuevos autónomos en Bizkaia"}
+        ]
+        
+        # Sugerencias alineadas
+        cols = st.columns(2)
+        
+        for i, sug in enumerate(sugerencias):
+            with cols[i % 2]:
+                if st.button(f"{sug['texto']}", key=f"sug_{i}", use_container_width=True):
+                    # Al hacer clic, enviamos la sugerencia como pregunta
+                    prompt = sug['texto']
+                    st.session_state.messages.append({"role": "user", "content": prompt})
+                    asyncio.run(ejecutar_streaming(prompt, chat_container))
+                    st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True) # Cierre de full-landing-view
     
-    with chat_container:
-        for msg in st.session_state.messages:
-            render_message(
-                msg["role"], 
-                msg["content"], 
-                msg.get("sources"),
-                msg.get("imagenes")
-            )
+    else:
+        # Modo Chat Normal
+        with chat_container:
+            for msg in st.session_state.messages:
+                render_message(
+                    msg["role"], 
+                    msg["content"], 
+                    msg.get("sources"),
+                    msg.get("imagenes")
+                )
 
     if prompt := st.chat_input("Escribe tu consulta..."):
-        with chat_container:
-            render_message("user", prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        # Llamamos a la lógica de streaming asíncrona
-        asyncio.run(ejecutar_streaming(prompt, chat_container))
+        if len(st.session_state.messages) == 0:
+            # Si es la primera pregunta, forzamos un rerun para cambiar el layout antes de responder
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            asyncio.run(ejecutar_streaming(prompt, chat_container))
+            st.rerun()
+        else:
+            with chat_container:
+                render_message("user", prompt)
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            asyncio.run(ejecutar_streaming(prompt, chat_container))
 
     with st.sidebar:
-        st.markdown("<h5>🍁 Asistente Autonomos Bizkaia</h5>", unsafe_allow_html=True)
-        st.markdown("<h4>Panel de Control</h4>", unsafe_allow_html=True)
+        st.markdown("<h5>🍁 Asistente Autónomos Bizkaia</h5>", unsafe_allow_html=True)
+        st.markdown("<h4>Panel Informativo</h4>", unsafe_allow_html=True)
         
-        status_color = f"<span style='color:lime'>{st.session_state.api_status}</span>" if st.session_state.api_status == "Conectado" else f"<span style='color:red'>{st.session_state.api_status}</span>"
-        st.markdown(f"<h5>API: <b><i>{status_color}</i></b></h5>", unsafe_allow_html=True)
+        status_color = f"<span style='color: #2BB92B'>{st.session_state.api_status}</span>" if st.session_state.api_status == "Conectado" else f"<span style='color:red'>{st.session_state.api_status}</span>"
+        st.markdown(f"<div style='font-size: 15px; text-align: center;'>API: <b><i>{status_color}</i></b></div>", unsafe_allow_html=True)
         
+        st.divider()
+
         if st.session_state.debug_logs:
             last_log = st.session_state.debug_logs[-1]
             cat = last_log.get("categoria", "N/A")
             
-            st.divider()
             st.subheader("Análisis del Router")
             st.info(f"Categoría Detectada: {cat}")
             
