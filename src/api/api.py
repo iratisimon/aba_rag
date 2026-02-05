@@ -16,14 +16,15 @@ from sentence_transformers import CrossEncoder
 from contextlib import asynccontextmanager
 from fastapi.responses import StreamingResponse
 import json
-from utilidades import utils, funciones_db, funciones_evaluacion
-from utilidades import prompts
-import torch
-from transformers import CLIPModel, CLIPProcessor
 
 # Agregar src al path para asegurar imports si se ejecuta directamente
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
 load_dotenv()
+
+from utilidades import utils, funciones_db, funciones_evaluacion
+from utilidades import prompts
+import torch
+from transformers import CLIPModel, CLIPProcessor
 
 # Validacion de variables de entorno
 REQUIRED_VARS = [
@@ -309,7 +310,7 @@ def nodo_reranker(state: GraphState):
     
     # Filtro de corte: Solo nos quedamos con los que superen un umbral (ej: 0.1 o 0.3)
     # y limitamos a los 3 mejores para no saturar el contexto del LLM
-    umbral = 0.1  # Umbral más permisivo para no filtrar todos los documentos
+    umbral = 0.25  # Umbral más permisivo para no filtrar todos los documentos
     docs_reordenados = []
     metas_reordenadas = []
     
@@ -365,7 +366,7 @@ async def nodo_evaluador(state: GraphState):
         state["debug_pipeline"].append("[EVALUADOR] Documentos irrelevantes. Abortando generación.")
         logger.info("[EVALUADOR] Documentos irrelevantes. Abortando generación.")
         # FIX: Establecer respuesta final para que no llegue vacía al cliente
-        state["respuesta_final"] = "Lo siento, tras analizar los documentos recuperados, no he encontrado información suficientemente relevante para responder a tu pregunta específica."
+        state["respuesta_final"] = "Lo siento, parece que no tengo información suficiente en este momento para responder a tu pregunta. "
         state["destino"] = "sin_informacion"
     
     return state

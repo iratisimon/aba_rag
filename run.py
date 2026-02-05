@@ -14,7 +14,7 @@ def start():
 
     # 2. Esperar a que los modelos se carguen
     logger.info("Esperando a que los modelos carguen en memoria...")
-    time.sleep(20)
+    time.sleep(30)
 
     # 3. Arrancar Streamlit
     logger.info("Iniciando Interfaz (Streamlit)...")

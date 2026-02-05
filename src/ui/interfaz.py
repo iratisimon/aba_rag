@@ -13,7 +13,7 @@ from utilidades import utils
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Asistente RAG Autonomos Bizkaia",
+    page_title="Asistente Autonomos Bizkaia",
     page_icon="🍁",
     layout="wide",
 )
@@ -311,66 +311,53 @@ ST_STYLE = """
 """
 st.markdown(ST_STYLE, unsafe_allow_html=True)
 
+def get_base64_encoded_image(image_path):
+    import base64
+    try:
+        if not os.path.exists(image_path):
+            return None
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode('utf-8')
+    except Exception:
+        return None
+
 def render_message(role, content, sources=None, imagenes=None):
-    """Renderiza un mensaje con estilos HTML personalizados."""
+    """Renderiza un mensaje con mejor estructura y soporte para imágenes."""
     if not content or not content.strip():
         return
 
     if role == "user":
         st.markdown(f'<div class="user-bubble">{content}</div>', unsafe_allow_html=True)
     else:
-        # Convertir markdown a HTML para evitar problemas de anidación
-        import markdown
-        content_html = markdown.markdown(content)
-        
-        sources_html = ""
-        if sources:
-            sources_html = "".join([
-                f'<a href="#" class="source-chip">{s.get("archivo", "Doc")} ({s.get("chunk_id", "?")})</a>' 
-                for s in sources
-            ])
-            sources_html = f'<div class="sources-container">{sources_html}</div>'
-        
-        # Galería de imágenes
-        images_html = ""
-        if imagenes and len(imagenes) > 0:
-            images_cards = ""
-            for img in imagenes:
-                ruta = img.get("ruta_imagen", "")
-                nombre = img.get("nombre_archivo", "imagen")
-                pdf_origen = img.get("pdf_origen", "")
-                pagina = img.get("pagina", 0)
-                
-                # Usar st.image después del HTML para mejor compatibilidad
-                # Primero mostramos el HTML y luego usamos columnas de Streamlit
-                images_cards += f'''
-                <div class="image-card">
-                    <img src="{ruta}" alt="{nombre}" />
-                    <div class="image-caption">
-                        📄 {pdf_origen} (p.{pagina})
-                    </div>
-                </div>
-                '''
-            
-            images_html = f'''
-            <div class="image-gallery">
-                <div class="image-gallery-title">🖼️ Imágenes relacionadas ({len(imagenes)})</div>
-                <div class="image-grid">
-                    {images_cards}
-                </div>
-            </div>
-            '''
-        
-        full_html = f'''
+        # Burbuja de la IA - Texto
+        st.markdown(f'''
         <div class="ai-bubble">
             <div class="content">
-                {content_html}
+                {content}
             </div>
-            {sources_html}
-            {images_html}
         </div>
-        '''
-        st.markdown(full_html, unsafe_allow_html=True)
+        ''', unsafe_allow_html=True)
+        
+        # Galería de imágenes usando componentes nativos para mayor estabilidad
+        if imagenes and len(imagenes) > 0:
+            st.markdown("---")
+            st.markdown("**Imágenes relacionadas**")
+            
+            # Usar columnas dinámicas para la galería
+            n_cols = 3
+            cols = st.columns(n_cols)
+            
+            for i, img in enumerate(imagenes):
+                with cols[i % n_cols]:
+                    ruta = img.get("ruta_imagen", "")
+                    nombre = img.get("nombre_archivo", "imagen")
+                    pdf_origen = img.get("pdf_origen", "")
+                    pagina = img.get("pagina", 0)
+                    
+                    if os.path.exists(ruta):
+                        st.image(ruta, caption=f"{pdf_origen} (p.{pagina})", width="content")
+                    else:
+                        st.warning(f"No se encontró: {nombre}")
 
 import urllib.request
 import json
@@ -447,7 +434,7 @@ async def ejecutar_streaming(prompt, chat_container):
                         <div class="ai-bubble">
                             <div class="content">
                                 {content_html}
-                                <span style="animation: blink 1s infinite;">▌</span>
+                                <span style="animation: blink 1s infinite;">|</span>
                             </div>
                         </div>
                         <style>
@@ -470,6 +457,8 @@ async def ejecutar_streaming(prompt, chat_container):
         
         if not full_response:
              full_response = "Lo siento, parece que no tengo información suficiente en este momento para responder a tu pregunta."
+             st.session_state.last_sources = []
+             st.session_state.last_images = []
 
         if response_placeholder is not None:
             response_placeholder.empty()
@@ -549,7 +538,7 @@ def main():
             else:
                 for s in sources:
                     with st.expander(f"{s['archivo']}"):
-                        st.caption(f"ID: {s['chunk_id']} | Score: {round(s['score'], 3)}")
+                        st.caption(f"Score: {round(s['score'], 3)}")
             
             # Mostrar información de imágenes
             imagenes = st.session_state.get("last_images", [])
@@ -567,7 +556,7 @@ def main():
             
             st.subheader("Traza del Grafo")
             for i, step in enumerate(last_log.get("pipeline", [])):
-                st.caption(f"Step {i+1}: {step}")
+                st.caption(f"Paso {i+1}: {step}")
             
             # --- SECCIÓN DE CALIDAD ---
             metricas = last_log.get("metricas", {})

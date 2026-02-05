@@ -59,14 +59,17 @@ def cargar_modelos():
     logger.info(f"   Dispositivo detectado: {device.upper()}")
 
     # 1. Modelo de Embeddings (Texto)
+    # 1. Modelo de Embeddings (Texto)
     logger.info("Cargando Embeddings de Texto...")
-    model_emb = SentenceTransformer(MODELO_EMBEDDINGS)
+    model_emb = SentenceTransformer(MODELO_EMBEDDINGS, device=device)
 
     # 2. Modelo de Visión (CLIP)
     logger.info("Cargando CLIP (Visión)...")
-    model_clip = SentenceTransformer(MODELO_CLIP)
+    # Usamos transformers nativo para evitar error 'Image object not subscriptable' en SentenceTransformer
+    model_clip = CLIPModel.from_pretrained(MODELO_CLIP).to(device)
+    processor_clip = CLIPProcessor.from_pretrained(MODELO_CLIP)
     
-    return model_emb, model_clip
+    return model_emb, model_clip, processor_clip
 
 def crear_db(reset=False):
     """
@@ -142,7 +145,7 @@ def insertar_texto(texto, nombre_pdf, modelo_embeddings, collection, metadatos_j
     for idx, item in enumerate(chunks):
         metadatas.append({
             "source": nombre_pdf,
-            "category": categoria,
+            "categoria": categoria,
             "type": "child",
             "parent_id": item["padre_id"],
             "contexto_expandido": item["texto_completo_padre"]
@@ -166,7 +169,7 @@ def insertar_texto(texto, nombre_pdf, modelo_embeddings, collection, metadatos_j
         logger.error(f"Error al insertar en ChromaDB: {str(e)}")
         logger.error(traceback.format_exc())
 
-def insertar_imagen(model_clip, collection, metadata_imagenes=None):
+def insertar_imagen(model_clip, processor_clip, collection, metadata_imagenes=None):
     if not metadata_imagenes:
         logger.warning("No se proporcionaron metadatos de imágenes; nada que procesar")
         return
@@ -183,17 +186,48 @@ def insertar_imagen(model_clip, collection, metadata_imagenes=None):
 
             image = Image.open(ruta).convert("RGB")
 
-            embeddings = model_clip.encode([image], convert_to_numpy=True)
+            # Procesar con CLIPProcessor
+            inputs = processor_clip(images=image, return_tensors="pt").to(model_clip.device)
+            
+            with torch.no_grad():
+                # get_image_features ya devuelve el tensor proyectado
+                features = model_clip.get_image_features(**inputs)
+                
+                # Nos aseguramos de tener un vector (tensor) de PyTorch
+                # get_image_features suele devolver el tensor proyectado, 
+                # pero en algunas versiones devuelve un objeto BaseModelOutputWithPooling
+                if hasattr(features, "pooler_output"):
+                    features = features.pooler_output
+                elif hasattr(features, "image_embeds"):
+                    features = features.image_embeds
+                elif isinstance(features, (list, tuple)):
+                    features = features[0]
+                
+                # Si a pesar de todo no es un tensor (caso raro), forzamos conversión si es posible
+                if not isinstance(features, torch.Tensor) and hasattr(features, "__getitem__"):
+                    try:
+                        features = features[0]
+                    except:
+                        pass
+
+                # Normalizar embeddings (crucial para CLIP)
+                # Si llega aquí y no es tensor, fallará con un error descriptivo
+                if not isinstance(features, torch.Tensor):
+                    raise ValueError(f"No se pudo extraer el tensor de características. Tipo recibido: {type(features)}")
+
+                features = features / features.norm(p=2, dim=-1, keepdim=True)
+                embedding = features.cpu().numpy().tolist()[0] 
 
             collection.add(
                 ids=[str(uuid.uuid4())],
-                embeddings=embeddings,
+                embeddings=[embedding], # Embeddings debe ser una lista de listas [[...]]
                 documents=[meta["nombre_archivo"]],
                 metadatas=[{
                     "pdf_origen": meta["pdf_origen"],
                     "categoria": meta.get("categoria", "sin_categoria"),
                     "pagina": meta.get("pagina"),
                     "nombre_archivo": meta["nombre_archivo"],
+                    "ruta_imagen": meta["ruta_imagen"],
                     "tipo": "imagen"
                 }]
             )
@@ -212,7 +246,7 @@ def main():
     reset_db = (resp == 's')
     
     # Cargar modelos y crear db
-    model_emb, model_clip = cargar_modelos()
+    model_emb, model_clip, processor_clip = cargar_modelos()
     collections = crear_db(reset_db)
     
     # Cargar metadatos de PDFs una sola vez
@@ -258,6 +292,7 @@ def main():
     logger.info("\nProcesando imágenes...")
     insertar_imagen(
         model_clip=model_clip,
+        processor_clip=processor_clip,
         collection=collections["imagenes"],
         metadata_imagenes=metadata_imagenes
     )
@@ -267,7 +302,8 @@ def main():
     logger.info("\n RAG MULTIMODAL - ACTUALIZANDO COLECCIÓN DE IMÁGENES \n")
 
     # Cargar modelos
-    _, model_clip = cargar_modelos()  # Ignoramos embeddings de texto porque no tocamos PDFs
+    # Cargar modelos
+    _, model_clip, processor_clip = cargar_modelos()  # Ignoramos embeddings de texto porque no tocamos PDFs
 
     # Conectar con la base de datos
     client = chromadb.PersistentClient(path=DB_PATH)
@@ -299,6 +335,7 @@ def main():
     logger.info("\nProcesando imágenes...")
     insertar_imagen(
         model_clip=model_clip,
+        processor_clip=processor_clip,
         collection=collection_imagenes,
         metadata_imagenes=metadata_imagenes
     )
