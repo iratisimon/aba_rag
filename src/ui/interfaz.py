@@ -54,7 +54,7 @@ ST_STYLE = """
     }
 
     h1 {
-        background: linear-gradient(135deg, #FF2E2E   0%, #F96A6A  80%);
+        background: linear-gradient(135deg, #000000   0%, #000000  80%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 250 !important;
@@ -64,7 +64,7 @@ ST_STYLE = """
         margin-top: 7rem !important;
     }
     h2 {
-        background: linear-gradient(135deg, #FF2E2E  0%, #F96A6A 80%);
+        background: linear-gradient(135deg, #000000  0%, #000000 80%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 500 !important;
@@ -77,7 +77,7 @@ ST_STYLE = """
         background: linear-gradient(135deg, #000000  0%, #000000 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 400 !important;
+        font-weight: 300 !important;
         font-size: 2rem !important;
         letter-spacing: -0.5px;
         margin-top: -1.5rem !important;
@@ -237,7 +237,7 @@ ST_STYLE = """
     }
 
     .thinking-bubble {
-        background-color: #FFFFFF;
+        background-color: #FFF6F6;
         padding: 1rem 1.5rem;
         border-radius: 18px 18px 18px 4px;
         margin: 15px 0;
@@ -320,9 +320,8 @@ ST_STYLE = """
     .landing-container {
         display: flex;
         flex-direction: column;
-        align-items: flex-start; /* Alineación a la izquierda */
+        align-items: flex-start;
         justify-content: center;
-        margin-top: 20vh;
         width: 100%;
         max-width: 700px;
         margin-left: auto;
@@ -333,13 +332,15 @@ ST_STYLE = """
         margin-bottom: 0.5rem !important;
         text-align: left;
         width: 100%;
+        max-width: 700px;
+        margin-left: 0 !important;
     }
 
     .landing-title h1 {
         margin-top: 0 !important;
         margin-bottom: -3rem !important;
         line-height: 1.2;
-        margin-left: 1.3rem !important;
+        margin-left: 0 !important;
     }
 
     .landing-title h2 {
@@ -351,35 +352,20 @@ ST_STYLE = """
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 1rem;
-        max-width: 800px;
+        max-width: 700px; /* Ajustado de 800px a 700px */
         width: 100%;
         margin-top: 2rem;
-        padding: 0 1rem;
-    }
-
-    .suggestion-card {
-        background: #FFFFFF;
-        border: 1px solid #E1CBCB;
-        border-radius: 12px;
-        padding: 1rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: left;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        min-height: 100px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        padding: 0; /* Eliminado padding lateral */
     }
 
     /* Estilo para los botones que actúan como tarjetas */
     .stButton > button {
         border-radius: 12px !important;
         border: 1px solid #E1CBCB !important;
-        background-color: #FFFFFF !important;
+        background-color: #FFF6F6 !important;
         color: #3B1E1E !important;
-        height: auto !important; /* Altura automática */
-        min-height: 45px !important; /* Más pequeños */
+        height: auto !important;
+        min-height: 45px !important;
         text-align: left !important;
         display: flex !important;
         align-items: center !important;
@@ -387,6 +373,7 @@ ST_STYLE = """
         transition: all 0.3s ease !important;
         font-weight: 500 !important;
         box-shadow: 0 2px 5px rgba(0,0,0,0.02) !important;
+        width: 100% !important; /* Asegurar que ocupe el ancho de la columna */
     }
 
     .stButton > button:hover {
@@ -428,7 +415,7 @@ def render_message(role, content, sources=None, imagenes=None):
         st.markdown(f'''
         <div class="ai-bubble">
             <div class="content">
-                {content}
+                {content.replace("**", "<b>")}
             </div>
         </div>
         ''', unsafe_allow_html=True)
@@ -589,87 +576,110 @@ def main():
     if "debug_logs" not in st.session_state:
         st.session_state.debug_logs = []
 
+    if "processing" not in st.session_state:
+        st.session_state.processing = False
+    
+    if "awaiting_response" not in st.session_state:
+        st.session_state.awaiting_response = False
+
+    landing_placeholder = st.empty()
     chat_container = st.container()
 
-    if len(st.session_state.messages) == 0:
+    if len(st.session_state.messages) == 0 and not st.session_state.processing:
         # Estilo dinámico para posicionar el input y BLOQUEAR SCROLL
+        with landing_placeholder.container():
+            st.markdown("""
+                <style>
+                    /* ELIMINAR MÁRGENES GLOBALES EN LANDING */
+                    .block-container {
+                        padding: 0 !important;
+                        max-width: 700px !important;
+                        margin: 0 auto !important;
+                    }
+
+                    .main {
+                        overflow: hidden !important;
+                    }
+
+                    /* RESET DE TÍTULOS SOLO EN LANDING */
+                    .full-landing-view h1 {
+                        margin-top: 0 !important;
+                        margin-left: 0 !important;
+                    }
+                    
+                    div[data-testid="stChatInput"] {
+                        bottom: 60vh !important;
+                        z-index: 1000;
+                        width: 700px !important;
+                        max-width: 700px !important;
+                        margin: 0 auto !important;
+                    }
+
+                    /* Contenedor principal de la landing */
+                    .full-landing-view {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-start;
+                        width: 100%;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+            
+            # Abrimos el contenedor de la vista completa
+            st.markdown('<div class="full-landing-view">', unsafe_allow_html=True)
+            
+            st.markdown('''
+                <div class="landing-title">
+                    <h1>Hola,</h1>
+                    <h2>¿En qué puedo ayudarte?</h2>
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            # Espacio reservado para el input que está flotando (bottom: 45vh)
+            st.markdown('<div style="height: 10vh;"></div>', unsafe_allow_html=True)
+            
+            # Sugerencias
+            sugerencias = [
+                {"texto": "¿Qué deducciones puedo aplicar como autónomo?"},
+                {"texto": "Cómo solicitar subvenciones en Bizkaia"},
+                {"texto": "Requisitos para el alta en el RETA"},
+                {"texto": "Ayudas para nuevos autónomos en Bizkaia"}
+            ]
+            
+            # Sugerencias alineadas
+            cols = st.columns(2)
+            
+            for i, sug in enumerate(sugerencias):
+                with cols[i % 2]:
+                    if st.button(f"{sug['texto']}", key=f"sug_{i}", use_container_width=True):
+                        # Al hacer clic, enviamos la sugerencia como pregunta
+                        prompt = sug['texto']
+                        st.session_state.messages.append({"role": "user", "content": prompt})
+                        st.session_state.processing = True
+                        st.session_state.awaiting_response = True
+                        landing_placeholder.empty() # BORRADO EXPLÍCITO
+                        st.rerun()
+            
+            st.markdown('</div>', unsafe_allow_html=True) # Cierre de full-landing-view
+    
+    else:
+        # Modo Chat Normal - FORCE HIDE LANDING VIA CSS Y LIMPIEZA
+        landing_placeholder.empty() # ASEGURAR QUE ESTÉ VACÍO
         st.markdown("""
             <style>
-                /* ELIMINAR MÁRGENES GLOBALES EN LANDING */
+                .full-landing-view { display: none !important; }
+                div[data-testid="stChatInput"] { 
+                    bottom: 40px !important; 
+                    transition: bottom 0.3s ease !important;
+                }
                 .block-container {
-                    padding-top: 0rem !important;
-                    padding-bottom: 0rem !important;
-                }
-                
-                header[data-testid="stHeader"] {
-                    display: none;
-                }
-
-                .main {
-                    overflow: hidden !important;
-                }
-
-                /* RESET DE TÍTULOS SOLO EN LANDING */
-                .full-landing-view h1 {
-                    margin-top: 0 !important;
-                    margin-left: 0 !important;
-                }
-                
-                div[data-testid="stChatInput"] {
-                    bottom: 45vh !important;
-                    z-index: 1000;
-                }
-
-                /* Contenedor principal de la landing */
-                .full-landing-view {
-                    height: 100vh;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-start;
-                    max-width: 700px;
-                    margin: 0 auto;
-                    padding-top: 18vh;
+                    max-width: 800px !important;
+                    padding-left: 1rem !important;
+                    padding-right: 1rem !important;
                 }
             </style>
         """, unsafe_allow_html=True)
-        
-        # Abrimos el contenedor de la vista completa
-        st.markdown('<div class="full-landing-view">', unsafe_allow_html=True)
-        
-        st.markdown('''
-            <div class="landing-title">
-                <h1>Hola,</h1>
-                <h2>¿En qué puedo ayudarte?</h2>
-            </div>
-        ''', unsafe_allow_html=True)
-        
-        # Espacio reservado para el input que está flotando (bottom: 45vh)
-        st.markdown('<div style="height: 10vh;"></div>', unsafe_allow_html=True)
-        
-        # Sugerencias
-        sugerencias = [
-            {"texto": "¿Qué deducciones puedo aplicar como autónomo?"},
-            {"texto": "¿Cómo funciona el IVA trimestral?"},
-            {"texto": "Requisitos para el alta en el RETA"},
-            {"texto": "Ayudas para nuevos autónomos en Bizkaia"}
-        ]
-        
-        # Sugerencias alineadas
-        cols = st.columns(2)
-        
-        for i, sug in enumerate(sugerencias):
-            with cols[i % 2]:
-                if st.button(f"{sug['texto']}", key=f"sug_{i}", use_container_width=True):
-                    # Al hacer clic, enviamos la sugerencia como pregunta
-                    prompt = sug['texto']
-                    st.session_state.messages.append({"role": "user", "content": prompt})
-                    asyncio.run(ejecutar_streaming(prompt, chat_container))
-                    st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True) # Cierre de full-landing-view
-    
-    else:
-        # Modo Chat Normal
+
         with chat_container:
             for msg in st.session_state.messages:
                 render_message(
@@ -678,18 +688,21 @@ def main():
                     msg.get("sources"),
                     msg.get("imagenes")
                 )
+        
+        # Si estamos esperando una respuesta, la ejecutamos aquí para que la landing ya esté oculta
+        if st.session_state.awaiting_response:
+            st.session_state.awaiting_response = False
+            last_msg = st.session_state.messages[-1]["content"] if st.session_state.messages else ""
+            if last_msg:
+                asyncio.run(ejecutar_streaming(last_msg, chat_container))
+                st.session_state.processing = False
+                st.rerun()
 
-    if prompt := st.chat_input("Escribe tu consulta..."):
-        if len(st.session_state.messages) == 0:
-            # Si es la primera pregunta, forzamos un rerun para cambiar el layout antes de responder
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            asyncio.run(ejecutar_streaming(prompt, chat_container))
-            st.rerun()
-        else:
-            with chat_container:
-                render_message("user", prompt)
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            asyncio.run(ejecutar_streaming(prompt, chat_container))
+    if prompt := st.chat_input("Escribe tu consulta...", disabled=st.session_state.processing):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.processing = True
+        st.session_state.awaiting_response = True
+        st.rerun()
 
     with st.sidebar:
         st.markdown("<h5>🍁 Asistente Autónomos Bizkaia</h5>", unsafe_allow_html=True)

@@ -8,21 +8,15 @@ logger = logging.getLogger("evaluacion_rag")
 def evaluar_fidelidad(pregunta: str, respuesta: str, contexto: str, client_llm, model_name: str) -> int:
     """
     JUEZ DE FIDELIDAD (Faithfulness) - Detector de Alucinaciones
-    Use prompts from prompts.py
     """
     
     prompt_juez = prompts.obtener_prompt_fidelidad(contexto, respuesta)
 
     try:
-        # Nota: Usamos client_llm.invoke o client_llm.chat.completions.create dependiendo de si es LangChain o cliente directo.
-        # En api.py se usa LangChain (ChatOpenAI), así que usaremos invoke.
-        
-        # Adaptación si es objeto LangChain
         if hasattr(client_llm, "invoke"):
             response = client_llm.invoke([{"role": "user", "content": prompt_juez}])
             texto = response.content.strip()
         else:
-            # Fallback si es cliente OpenAI standard (como en los scripts de prueba)
             veredicto = client_llm.chat.completions.create(
                 model=model_name,
                 messages=[{"role": "user", "content": prompt_juez}],
@@ -31,7 +25,6 @@ def evaluar_fidelidad(pregunta: str, respuesta: str, contexto: str, client_llm, 
             )
             texto = veredicto.choices[0].message.content.strip()
 
-        # Parsing robusto
         match = re.search(r'\b([01])\b', texto)
         if match:
             return int(match.group(1))
@@ -47,7 +40,6 @@ def evaluar_fidelidad(pregunta: str, respuesta: str, contexto: str, client_llm, 
 def evaluar_relevancia(pregunta: str, respuesta: str, client_llm, model_name: str) -> int:
     """
     JUEZ DE RELEVANCIA (Answer Relevance)
-    Use prompts from prompts.py
     """
     
     prompt_juez = prompts.obtener_prompt_relevancia(pregunta, respuesta)
