@@ -29,7 +29,7 @@ from transformers import CLIPModel, CLIPProcessor
 # Validacion de variables de entorno
 REQUIRED_VARS = [
     "DB_PATH", "COLLECTION_NAME_PDFS", "COLLECTION_NAME_IMAGENES", "MODELO_EMBEDDINGS", 
-    "LLM_BASE_URL", "LLM_API_KEY", "MODELO_LLM", "MODELO_FAST", "MODELO_CLIP"
+    "LLM_BASE_URL", "LLM_API_KEY", "MODELO_LLM", "MODELO_FAST", "MODELO_CLIP", "MODELO_RERANKER"
 ]
 
 missing_vars = [var for var in REQUIRED_VARS if not os.getenv(var)]
@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Cargando modelos en dispositivo: {device.upper()}")
     
     model_emb = SentenceTransformer(os.getenv("MODELO_EMBEDDINGS"), device=device)
-    rerank_model = CrossEncoder('BAAI/bge-reranker-v2-m3', device=device)
+    rerank_model = CrossEncoder(os.getenv("MODELO_RERANKER", 'BAAI/bge-reranker-v2-m3'), device=device)
     
     # Cargar CLIP
     logger.info("Cargando modelo CLIP...")

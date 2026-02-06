@@ -1,14 +1,25 @@
-loguru
+# Core
 streamlit
-chromadb
-sentence-transformers
-openai
-python-dotenv
-pymupdf
-plotly
 fastapi
 uvicorn
+pydantic
+python-dotenv
+loguru
+
+# AI & RAG
+openai
 langchain_openai
 langgraph
 langchain_text_splitters
+chromadb
+sentence-transformers
+transformers
+torch
+
+# Utils & Data
+pymupdf
+plotly
 markdown
+tqdm
+Pillow
+httpx
