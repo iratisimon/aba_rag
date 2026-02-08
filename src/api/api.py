@@ -55,6 +55,40 @@ model_clip      = None
 clip_processor  = None
 device          = None
 
+# Caché de métricas de retrieval (se rellenan al arranque o al llamar a /metricas-retrieval)
+retrieval_metrics_cache: dict = {"hit_rate": None, "mrr": None, "num_preguntas": None}
+
+
+def _evaluar_retrieval_y_guardar_en_cache() -> None:
+    """Ejecuta la evaluación de retrieval una vez y guarda hit_rate y mrr en caché."""
+    global model_emb
+    try:
+        col_pdfs = funciones_db.obtener_coleccion("pdfs")
+        golden_file = os.getenv("GOLDEN_SET_FILE", GOLDEN_SET_FILE)
+        golden_set = []
+        if os.path.exists(golden_file):
+            with open(golden_file, "r", encoding="utf-8") as f:
+                golden_set = [json.loads(line) for line in f if line.strip()]
+            logger.info(f"[RETRIEVAL] Golden set cargado ({len(golden_set)} entradas) desde {golden_file}.")
+        else:
+            num = int(os.getenv("GOLDEN_SET_DEFAULT_NUM", "20"))
+            golden_set = funciones_evaluacion.crear_golden_set_automatico(
+                col_pdfs, llm_fast, os.getenv("MODELO_FAST"), num_preguntas=num
+            )
+        if golden_set:
+            hit_rate, mrr = funciones_evaluacion.evaluar_retrieval(
+                col_pdfs, model_emb, golden_set, top_k=3
+            )
+            retrieval_metrics_cache["hit_rate"] = hit_rate
+            retrieval_metrics_cache["mrr"] = mrr
+            retrieval_metrics_cache["num_preguntas"] = num
+            logger.info(f"[RETRIEVAL] Métricas en caché: hit_rate={hit_rate:.2%}, mrr={mrr:.3f}, num_preguntas={num}")
+        else:
+            logger.warning("[RETRIEVAL] No hay golden set; métricas de retrieval quedarán en None.")
+    except Exception as e:
+        logger.error(f"[RETRIEVAL] Error evaluando retrieval al inicio: {e}")
+
+
 # Carga todas las herramientas necesarias al iniciar la API
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -88,6 +122,12 @@ async def lifespan(app: FastAPI):
     )
 
     logger.info("Modelos cargados y listos.")
+    # Evaluar retrieval una sola vez al arranque (evita hacerlo en cada chat)
+    if os.getenv("EVALUAR_RETRIEVAL_AL_INICIO", "true").lower() == "true":
+        logger.info("Evaluando retrieval (golden set) al inicio...")
+        _evaluar_retrieval_y_guardar_en_cache()
+    else:
+        logger.info("Evaluación de retrieval al inicio desactivada (EVALUAR_RETRIEVAL_AL_INICIO=false).")
     logger.info("Iniciando servicios de RAG...")
     yield
     # El código aquí se ejecuta al CERRAR la API
@@ -321,7 +361,7 @@ def nodo_reranker(state: GraphState):
     
     # Filtro de corte: Solo nos quedamos con los que superen un umbral (ej: 0.1 o 0.3)
     # y limitamos a los 3 mejores para no saturar el contexto del LLM
-    umbral = 0.25  # Umbral más permisivo para no filtrar todos los documentos
+    umbral = 0.25
     docs_reordenados = []
     metas_reordenadas = []
     
@@ -445,45 +485,20 @@ async def nodo_calidad(state: GraphState):
         llm_fast, os.getenv("MODELO_FAST")
     )
     
-    # Evaluar Retrieval
-    hit_rate = None
-    mrr = None
-    try:
-        # Obtener la colección de PDFs (misma que usa el buscador)
-        col_pdfs = funciones_db.obtener_coleccion("pdfs")
-
-        # Si hay un golden set en disco, cargarlo; si no, generarlo automáticamente.
-        golden_set = []
-        golden_file = os.getenv("GOLDEN_SET_FILE", GOLDEN_SET_FILE)
-        if os.path.exists(golden_file):
-            with open(golden_file, 'r', encoding='utf-8') as f:
-                golden_set = [json.loads(line) for line in f if line.strip()]
-            logger.info(f"[CALIDAD] Golden set cargado ({len(golden_set)} entradas) desde {golden_file}.")
-        else:
-            # Generar automáticamente un pequeño golden set para pruebas
-            num = int(os.getenv("GOLDEN_SET_DEFAULT_NUM", "5"))
-            golden_set = funciones_evaluacion.crear_golden_set_automatico(col_pdfs, llm_fast, os.getenv("MODELO_FAST"), num_preguntas=num)
-
-        if golden_set:
-            hit_rate, mrr = funciones_evaluacion.evaluar_retrieval(col_pdfs, model_emb, golden_set, top_k=3)
-            logger.info(f"[CALIDAD] Retrieval evaluado: {len(golden_set)} preguntas -> hit_rate={hit_rate}, mrr={mrr}")
-            state.setdefault('metricas', {})['hit_rate'] = hit_rate
-            state.setdefault('metricas', {})['mrr'] = mrr
-        else:
-            state['debug_pipeline'].append('[CALIDAD] No se generó ni cargó golden set para evaluación de retrieval.')
-    except Exception as e:
-        logger.error(f"[CALIDAD] Error durante evaluación de retrieval: {e}")
-        state['debug_pipeline'].append(f"[CALIDAD] Error durante evaluación de retrieval: {e}")
+    # Usar métricas de retrieval en caché (calculadas al arranque de la API)
+    hit_rate = retrieval_metrics_cache.get("hit_rate")
+    mrr = retrieval_metrics_cache.get("mrr")
+    num_preguntas = retrieval_metrics_cache.get("num_preguntas")
     
     state["metricas"] = {
         "fidelidad": fidelidad,
         "relevancia": relevancia,
         "hit_rate": hit_rate,
-        "mrr": mrr
+        "mrr": mrr,
+        "num_preguntas": num_preguntas
     }
-
-    state["debug_pipeline"].append(f"[CALIDAD] Fidelidad: {fidelidad} | Relevancia: {relevancia} | Hit Rate: {hit_rate*100:.1f}% | MRR: {mrr:.3f}")
-    logger.info(f"[CALIDAD] Fidelidad: {fidelidad} | Relevancia: {relevancia} | Hit Rate: {hit_rate*100:.1f}% | MRR: {mrr:.3f}")
+    state["debug_pipeline"].append(f"[CALIDAD] Fidelidad: {fidelidad} | Relevancia: {relevancia}")
+    logger.info(f"[CALIDAD] Fidelidad: {fidelidad} | Relevancia: {relevancia}")
     
     return state
 
@@ -551,6 +566,27 @@ class RespuestaResponse(BaseModel):
 def health(): return {"status": "OK", "version": "1.0"}
 
 
+@app.get("/metricas-retrieval")
+def get_metricas_retrieval():
+    """Devuelve las métricas de retrieval en caché (calculadas al arranque)."""
+    return {
+        "hit_rate": retrieval_metrics_cache.get("hit_rate"),
+        "mrr": retrieval_metrics_cache.get("mrr"),
+        "num_preguntas": retrieval_metrics_cache.get("num_preguntas")
+    }
+
+
+@app.post("/metricas-retrieval")
+def refrescar_metricas_retrieval():
+    """Vuelve a evaluar el retrieval y actualiza la caché (útil tras añadir documentos)."""
+    _evaluar_retrieval_y_guardar_en_cache()
+    return {
+        "hit_rate": retrieval_metrics_cache.get("hit_rate"),
+        "mrr": retrieval_metrics_cache.get("mrr"),
+        "num_preguntas": retrieval_metrics_cache.get("num_preguntas")
+    }
+
+
 @app.post("/buscar-imagenes", response_model=List[Imagen])
 async def buscar_imagenes_similares(file: UploadFile = File(...)):
     """
@@ -596,35 +632,6 @@ async def buscar_imagenes_similares(file: UploadFile = File(...)):
                 score=float(score) if score is not None else 0.0,
             ))
     return out
-
-@app.post("/chat", response_model=RespuestaResponse)
-async def chat_endpoint(request: PreguntaRequest):
-    t_start = time.time()
-    
-    inputs = {
-        "pregunta": request.pregunta,
-        "historial": request.historial,
-        "contexto_docs": [],
-        "contexto_fuentes": [],
-        "imagenes_relacionadas": [],
-        "respuesta_final": "",
-        "debug_pipeline": [],
-        "destino": None,
-        "categoria_detectada": "otros",
-        "metricas": {}
-    }
-    res = await app_graph.ainvoke(inputs)
-    return RespuestaResponse(
-        respuesta=res["respuesta_final"],
-        fuentes=[Fuente(**f) for f in res["contexto_fuentes"]],
-        imagenes=[Imagen(**img) for img in res.get("imagenes_relacionadas", [])],
-        debug_info={
-            "pipeline": res["debug_pipeline"], 
-            "categoria": res.get("categoria_detectada"),
-            "metricas": res.get("metricas")
-        },
-        tiempo_segundos=time.time() - t_start
-    )
 
 @app.post("/chat/stream")
 async def chat_streaming_endpoint(request: PreguntaRequest):

@@ -108,7 +108,7 @@ def generar_pregunta_para_chunk(texto_chunk: str, metadata: dict, client_llm, mo
         logger.error(f"Error generando pregunta: {e}")
         return None
     
-def crear_golden_set_automatico(collection, client_llm, model_name: str, num_preguntas: int = 5):
+def crear_golden_set_automatico(collection, client_llm, model_name: str, num_preguntas: int = 20):
     """Crea un dataset de evaluación automáticamente (Formato Estándar).
     """
     logger.info(f"Generando Golden Set Automático ({num_preguntas} preguntas)...")
@@ -130,6 +130,7 @@ def crear_golden_set_automatico(collection, client_llm, model_name: str, num_pre
         texto = all_docs[idx]
         meta = all_metas[idx] if idx < len(all_metas) else {}
 
+        logger.info(f"Generando pregunta {i+1} de {num_preguntas} -> {pregunta}")
         pregunta = generar_pregunta_para_chunk(texto, meta, client_llm, model_name)
 
         if pregunta:
@@ -145,7 +146,7 @@ def crear_golden_set_automatico(collection, client_llm, model_name: str, num_pre
                 }
             }
             golden_set.append(entry)
-            time.sleep(10)
+            time.sleep(2)
 
         else:
             logger.warning(f"No se pudo generar pregunta para chunk id={chunk_id}")
@@ -170,10 +171,6 @@ def evaluar_retrieval(collection, model_emb, golden_set, top_k: int = 3):
         model_emb: Modelo de embeddings (SentenceTransformer)
         golden_set: Lista de casos de prueba {query, relevant_ids}
         top_k (int): Número de documentos a recuperar por consulta.
-                     Default=3. Rango típico: 3-10.
-                     
-                     ¿Por qué 3?
-                     - Suficiente para la mayoría de consultas simples
     
     Returns:
         tuple: (hit_rate, mrr) métricas de evaluación

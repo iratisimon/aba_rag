@@ -184,22 +184,45 @@ ST_STYLE = """
         border: none !important;
     }
     
-    /* INPUT FLOTANTE (ADAPTIVE) */
+    /* INPUT FLOTANTE (ADAPTIVE) - Ahora en columnas */
     .stChatInput {
-        /* Eliminamos posicionamiento forzado para que respete el sidebar nativamente */
         bottom: 40px !important;
         background: transparent !important;
     }
     
     div[data-testid="stChatInput"] {
-        /* Estilo Isla centrado en su contenedor */
-        max-width: 700px !important; 
-        margin: 0 auto !important;
-        
+        /* Chat input dentro de columna - sin max-width aquí */
         background: #FFFFFF !important;
         border-radius: 0.6rem !important;
         border: 2px solid #E1CBCB !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    /* File uploader más compacto y bonito */
+    .stFileUploader {
+        margin-top: 0 !important;
+    }
+    
+    .stFileUploader > div {
+        padding: 0.5rem !important;
+        border-radius: 0.6rem !important;
+        border: 2px solid #E1CBCB !important;
+        background: #FFFFFF !important;
+        min-height: 60px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .stFileUploader label {
+        font-size: 1.5rem !important;
+        text-align: center !important;
+        display: block !important;
+        margin: 0 !important;
+    }
+    
+    .stFileUploader section {
+        border: none !important;
     }
 
     .source-chip {
@@ -353,7 +376,7 @@ ST_STYLE = """
 
     .suggestions-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmin(180px, 1fr));
         gap: 1rem;
         max-width: 700px; /* Ajustado de 800px a 700px */
         width: 100%;
@@ -442,7 +465,7 @@ def render_message(role, content, sources=None, imagenes=None):
                     if not ruta or not os.path.exists(ruta):
                         ruta = str(IMAGENES_DIR / nombre)
                     if os.path.exists(ruta):
-                        st.image(ruta, caption=f"{pdf_origen} (p.{pagina})", width="content")
+                        st.image(ruta, caption=f"{pdf_origen} (p.{pagina})", width='stretch')
                     else:
                         st.warning(f"No se encontró: {nombre}")
 
@@ -460,6 +483,17 @@ def check_api_health():
     except:
         pass
     return "Desconectado"
+
+def obtener_metricas_retrieval():
+    """Obtiene las métricas de retrieval desde la API."""
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:8000/metricas-retrieval", timeout=5) as response:
+            if response.getcode() == 200:
+                data = json.loads(response.read().decode())
+                return data.get("hit_rate"), data.get("mrr"), data.get("num_preguntas")
+    except Exception as e:
+        print(f"Error obteniendo métricas de retrieval: {e}")
+    return None, None, None
 
 async def ejecutar_streaming(prompt, chat_container):
     full_response = ""
@@ -539,6 +573,12 @@ async def ejecutar_streaming(prompt, chat_container):
                         st.session_state.last_images = meta_json.get("imagenes", [])
                         st.session_state.debug_logs.append(meta_json["debug"])
                         
+                        # Actualizar métricas de retrieval después de cada pregunta
+                        hit_rate, mrr, num_preguntas = obtener_metricas_retrieval()
+                        st.session_state.retrieval_metrics["hit_rate"] = hit_rate
+                        st.session_state.retrieval_metrics["mrr"] = mrr
+                        st.session_state.retrieval_metrics["num_preguntas"] = num_preguntas
+                        
         # 5. Finalización
         thinking_placeholder.empty()
         
@@ -587,6 +627,14 @@ def main():
     if "awaiting_response" not in st.session_state:
         st.session_state.awaiting_response = False
 
+    # Obtener métricas de retrieval al inicio (solo una vez)
+    if "retrieval_metrics" not in st.session_state:
+        hit_rate, mrr = obtener_metricas_retrieval()
+        st.session_state.retrieval_metrics = {
+            "hit_rate": hit_rate,
+            "mrr": mrr
+        }
+
     landing_placeholder = st.empty()
     chat_container = st.container()
 
@@ -614,11 +662,25 @@ def main():
                     
                     /* Chat input abajo para no tapar las sugerencias */
                     div[data-testid="stChatInput"] {
-                        bottom: 24px !important;
-                        z-index: 100;
-                        width: 700px !important;
-                        max-width: 700px !important;
-                        margin: 0 auto !important;
+                        /* Chat input dentro de columna - sin max-width aquí */
+                        margin-top: 4rem !important;
+                        background: #FFFFFF !important;
+                        border-radius: 0.6rem !important;
+                        border: 2px solid #E1CBCB !important;
+                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
+                    }
+
+                    /* File uploader más compacto y bonito */
+                    .stFileUploader > div {
+                        margin-top: 4rem !important;
+                        padding: 0.5rem !important;
+                        border-radius: 0.6rem !important;
+                        border: 2px solid #E1CBCB !important;
+                        background: #FFFFFF !important;
+                        min-height: 60px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
                     }
 
                     /* Contenedor principal de la landing: padding abajo para que las sugerencias no queden bajo el input */
@@ -704,21 +766,45 @@ def main():
                 st.session_state.processing = False
                 st.rerun()
 
-    # Buscar por imagen en el área principal (como alternativa al chat input)
-    st.markdown("---")
-    st.caption("O sube una imagen para buscar similares en la base de datos")
-    img_upload = st.file_uploader(
-        "Imagen",
-        type=["png", "jpg", "jpeg"],
-        key="buscar_imagen_upload",
-        label_visibility="collapsed",
-    )
+    # Input combinado: texto (75%) + imagen (25%) en una fila - máximo 700px
+    st.markdown("""
+        <style>
+            /* Contenedor centrado con ancho máximo de 700px */
+            .input-row-container {
+                max-width: 700px;
+                margin: 2rem auto 0 auto;
+                padding: 0 1rem;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Crear columnas con proporciones 75%-25%
+    input_cols = st.columns([0.75, 0.25])
+    
+    with input_cols[0]:
+        # Input de texto (75%)
+        prompt = st.chat_input("Escribe tu consulta...", disabled=st.session_state.processing, key="main_chat_input")
+        if prompt:
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            st.session_state.processing = True
+            st.session_state.awaiting_response = True
+            st.rerun()
+    
+    with input_cols[1]:
+        # Input de imagen (25%)
+        img_upload = st.file_uploader(
+            "",
+            type=["png", "jpg", "jpeg"],
+            key="buscar_imagen_upload",
+            help="Buscar por imagen similar",
+            disabled=st.session_state.processing
+        )
+    
+    # Procesar imagen subida (si existe)
     if img_upload is not None:
-        col_preview, col_btn = st.columns([3, 1])
-        with col_preview:
-            st.image(img_upload, caption="Tu imagen", use_container_width=True)
-        with col_btn:
-            if st.button("Buscar similares", key="btn_buscar_imagen", use_container_width=True):
+        # Mostrar preview en un expander
+        with st.expander("Vista previa y búsqueda", expanded=True):
+            if st.button("Buscar", key="btn_buscar_imagen", use_container_width=True):
                 with st.spinner("Buscando..."):
                     try:
                         api_base = "http://127.0.0.1:8000"
@@ -735,10 +821,10 @@ def main():
                     except Exception as e:
                         st.error(f"Error: {e}")
                         resultados = []
-                # Añadir como un turno más en el chat (igual que con el chat input)
+                # Añadir como un turno más en el chat
                 st.session_state.messages.append({
                     "role": "user",
-                    "content": f"Busqué por imagen: {img_upload.name}",
+                    "content": f"Buscar imágenes similares a: {img_upload.name}",
                 })
                 st.session_state.messages.append({
                     "role": "assistant",
@@ -746,12 +832,6 @@ def main():
                     "imagenes": resultados,
                 })
                 st.rerun()
-
-    if prompt := st.chat_input("Escribe tu consulta...", disabled=st.session_state.processing):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        st.session_state.processing = True
-        st.session_state.awaiting_response = True
-        st.rerun()
 
     with st.sidebar:
         st.markdown("<h5>🍁 Asistente Autónomos Bizkaia</h5>", unsafe_allow_html=True)
@@ -762,6 +842,7 @@ def main():
         
         st.divider()
 
+        # --- INFORMACIÓN DE DEBUG (CONDICIONAL) ---
         if st.session_state.debug_logs:
             last_log = st.session_state.debug_logs[-1]
             cat = last_log.get("categoria", "N/A")
@@ -802,11 +883,9 @@ def main():
                 st.divider()
                 st.subheader("Métricas de Calidad")
                 
-                c1, c2, c3 = st.columns(3)
+                c1, c2 = st.columns(2)
                 fidelidad = metricas.get("fidelidad")
                 relevancia = metricas.get("relevancia")
-                hit_rate = metricas.get("hit_rate")
-                mrr = metricas.get("mrr")
 
                 with c1:
                     st.markdown("**Fidelidad**")
@@ -828,26 +907,38 @@ def main():
                             st.error(f"({relevancia}/5)")
                     else:
                         st.info("N/A")
-
-                with c3:
-                    st.markdown("**Retrieval**")
-                    if hit_rate is not None:
-                        try:
-                            st.metric("Hit Rate @3", f"{hit_rate*100:.1f}%")
-                        except Exception:
-                            st.write(f"Hit Rate: {hit_rate}")
-                    else:
-                        st.info("Hit Rate: N/A")
-
-                    if mrr is not None:
-                        try:
-                            st.metric("MRR", f"{mrr:.3f}")
-                        except Exception:
-                            st.write(f"MRR: {mrr}")
-                    else:
-                        st.info("MRR: N/A")
         else:
             st.info("Realiza una consulta para ver el flujo de datos.")
+
+        st.divider()
+
+        # --- MÉTRICAS DE RETRIEVAL (SIEMPRE VISIBLES) ---
+        
+        hit_rate = st.session_state.retrieval_metrics.get("hit_rate")
+        mrr = st.session_state.retrieval_metrics.get("mrr")
+        num_preguntas = st.session_state.retrieval_metrics.get("num_preguntas")
+
+        st.markdown("**Métricas de Retrieval**")
+        st.write(f"Número de preguntas (@K): {num_preguntas}")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if hit_rate is not None:
+                try:
+                    st.metric("Hit Rate @K", f"{hit_rate*100:.1f}%", border=True)
+                except Exception:
+                    st.write(f"Hit Rate @K: {hit_rate*100:.1f}%")
+            else:
+                st.info("Hit Rate: N/A")
+        
+        with col2:
+            if mrr is not None:
+                try:
+                    st.metric("MRR @K", f"{mrr:.3f}", border=True)
+                except Exception:
+                    st.write(f"MRR @K: {mrr:.3f}")
+            else:
+                st.info("MRR: N/A")
 
 if __name__ == "__main__":
     main()
