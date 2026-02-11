@@ -1,4 +1,4 @@
-# Multimodal RAG - Bizkaia Autónomos
+# RAG Multimodal - Autónomos Bizkaia - ABA (Asistente Bizkaia Autónomos)
 
 Este proyecto implementa un sistema avanzado de **Generación Aumentada por Recuperación (RAG) Multimodal** diseñado para asistir a autónomos de Bizkaia. Utiliza una arquitectura basada en grafos para gestionar el flujo de conversación, recuperación de documentos (PDFs) e imágenes, y validación de respuestas.
 
@@ -104,3 +104,26 @@ python run.py
 - **Procesamiento de Docs**: PyMuPDF para extracción de contenido.
 
 ---
+
+## Visualización de ejemplo
+<div align="center">
+  <i>Página de inicio:</i>
+  <br><br>
+  <img src="https://github.com/user-attachments/assets/0b090202-e39d-4362-984e-7d0171de80ba" alt="interfaz_1">
+</div>
+
+<br>
+
+<div align="center">
+  <i>Flujo de ejecución:</i>
+  <br><br>
+  <img src="https://github.com/user-attachments/assets/333ce817-daed-4c9a-ab6e-39e7d9d42e4e" alt="interfaz_2">
+</div>
+
+<br>
+
+<div align="center">
+  <i>Apartado de flujo de acciones/evaluación:</i>
+  <br><br>
+  <img src="https://github.com/user-attachments/assets/00dbce57-1cd9-4ef2-82e4-94c8eb18926e" alt="interfaz_3">
+</div>
