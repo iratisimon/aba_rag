@@ -362,7 +362,8 @@ def nodo_reranker(state: GraphState):
     
     # Filtro de corte: Solo nos quedamos con los que superen un umbral (ej: 0.1 o 0.3)
     # y limitamos a los 3 mejores para no saturar el contexto del LLM
-    umbral = 0.25
+    # 0.0 como prueba cambiar luego
+    umbral = 0.0
     docs_reordenados = []
     metas_reordenadas = []
     
