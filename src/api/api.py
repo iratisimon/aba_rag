@@ -231,7 +231,7 @@ async def nodo_buscador(state: GraphState):
     # ========== BÚSQUEDA EN COLECCIÓN DE PDFs (TEXTO) ==========
     col_pdfs = funciones_db.obtener_coleccion("pdfs")
     
-    logger.info(f"[BUSCADOR] Buscando documentos de texto por filtro '{filtro}'")
+    logger.info(f"[BUSCADOR] Buscando documentos de texto por filtro '{filtro_pdfs}'")
     res_pdfs = col_pdfs.query(
         query_embeddings=q_emb,
         n_results=5,     
@@ -243,7 +243,7 @@ async def nodo_buscador(state: GraphState):
     docs = res_pdfs['documents'][0]
     metas = res_pdfs['metadatas'][0]
     
-    if not docs and filtro:
+    if not docs and filtro_pdfs:
         state["debug_pipeline"].append("[BUSCADOR] Nada en esa categoría. Buscando en todo...")
         res_pdfs = col_pdfs.query(query_embeddings=q_emb, n_results=5)
         docs, metas = res_pdfs['documents'][0], res_pdfs['metadatas'][0]
@@ -275,7 +275,7 @@ async def nodo_buscador(state: GraphState):
     # ========== BÚSQUEDA EN COLECCIÓN DE IMÁGENES (CLIP) ==========
     try:
         col_imagenes = funciones_db.obtener_coleccion("imagenes")
-        logger.info(f"[BUSCADOR] Buscando imágenes por filtro '{filtro}' Uusando CLIP")
+        logger.info(f"[BUSCADOR] Buscando imágenes por filtro '{filtro_imagenes}' Uusando CLIP")
         
         # Generar embedding de texto con CLIP para la pregunta
         # Usamos la pregunta original o una versión corta, ya que CLIP prefiere textos cortos
