@@ -406,6 +406,7 @@ async def nodo_evaluador(state: GraphState):
         else:
             state["debug_pipeline"].append("[EVALUADOR] Seguimos sin documentos tras reintento. Fin.")
             state["destino"] = "sin_informacion"
+            state["imagenes_relacionadas"] = [] # Limpiar imágenes si no hay texto
         return state
 
     llm = llm_fast
@@ -440,6 +441,7 @@ async def nodo_evaluador(state: GraphState):
             logger.info("[EVALUADOR] Documentos irrelevantes tras reintento. Abortando.")
             state["respuesta_final"] = "Lo siento, parece que no tengo información suficiente en este momento para responder a tu pregunta. "
             state["destino"] = "sin_informacion"
+            state["imagenes_relacionadas"] = [] # Limpiar imágenes si no sirven
     
     return state
 
