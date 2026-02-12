@@ -4,7 +4,7 @@ Este proyecto implementa un sistema avanzado de **Generación Aumentada por Recu
 
 ## Características Principales
 
-- **RAG Multimodal**: Recuperación inteligente tanto de fragmentos de texto como de imágenes relevantes (gráficos, tablas, logos) extraídos de documentos técnicos.
+- **RAG Multimodal**: Recuperación inteligente tanto de fragmentos de texto como de imágenes relevantes extraídos de documentos técnicos.
 - **Flujo Basado en Grafos**: Implementado con **LangGraph** para una lógica de decisión robusta (enrutamiento de consultas, evaluación de calidad, reintento de búsqueda).
 - **Interfaz**: Frontend desarrollado con **Streamlit**, optimizado para una experiencia de usuario fluida y visualmente atractiva.
 - **Backend**: API construida con **FastAPI** que gestiona el procesamiento, la búsqueda vectorial y el streaming de respuestas.
