@@ -35,6 +35,8 @@ aba_rag/
 │       ├── funciones_umap.py           # Visualizacion de embeddings con UMAP
 │       ├── prompts.py                  # Plantillas de sistema para el LLM
 │       └── utils.py                    # Utilidades generales del proyecto
+├── visualizaciones_umap/               # Carpeta para visualizaciones umap
+│   └──umap_ABA_3d_categoria.html       # Archivo .html con los graficos mostrando la distribución de los embbedings
 ├── run.py                              # Script principal para arrancar API + UI simultaneamente
 ├── requirements.txt                    # Dependencias del proyecto
 └── .env.template                       # Configuracion de claves API y rutas
@@ -72,8 +74,8 @@ graph TD
 ### 2. Instalacion
 Clona el repositorio e instala las dependencias:
 ```bash
-git clone https://github.com/iratisimon/aba_rag.git
-cd aba_rag
+git clone https://github.com/iratisimon/aba-rag.git
+cd aba-rag
 pip install -r requirements.txt
 ```
 
