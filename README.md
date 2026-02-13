@@ -2,6 +2,10 @@
 
 Este proyecto implementa un sistema avanzado de Generación Aumentada por Recuperación (RAG) Multimodal diseñado para asistir a autónomos de Bizkaia. Utiliza una arquitectura basada en grafos para gestionar el flujo de conversación, recuperación de documentos (PDFs) e imágenes, y validación de respuestas.
 
+## Objetivo
+
+ABA (Asistente Bizkaia Autónomos) está orientado a apoyar a los trabajadores autónomos de Bizkaia en la resolución de dudas sobre trámites, normativa y ayudas, con el objetivo de facilitar la búsqueda de este tipo información y hacerla un poco más accesible. El contenido de los PDFs, se organiza en tres categorías principales: laboral, fiscal y ayudas y subvenciones. A partir de estos documentos se extraen las imágenes que el sistema utiliza como parte del proceso de recuperación multimodal.
+
 ## Características Principales
 
 - **RAG Multimodal**: Recuperación inteligente tanto de fragmentos de texto como de imágenes relevantes (gráficos, tablas, logos) extraídos de documentos técnicos.
