@@ -14,7 +14,7 @@ El contenido de los PDFs, se organiza en tres categorías principales: laboral, 
 - **Flujo Basado en Grafos**: Implementado con **LangGraph** que permite modelar una rag con grafos de estados, donde cada nodo ejecuta una tarea y según el resultado determina como continua el proceso, para una lógica de decisión robusta.
 - **Interfaz**: Frontend desarrollado con **Streamlit**, optimizado para una experiencia de usuario fluida y visualmente atractiva con estados de carga claros.
 - **Backend**: API construida con **FastAPI** que gestiona el procesamiento, la búsqueda vectorial y la orquestación de modelos.
-- **Búsqueda Híbrida, HyDE y Re-ranking**: Combina búsqueda léxica y semántica, mejora la recuperación generando respuestas hipotéticas (HyDE) y ordena los resultados por relevancia usando Cross-Encoders.
+- **HyDE y Re-ranking**: Mejora la recuperación generando respuestas hipotéticas (HyDE) y ordena los resultados por relevancia usando Cross-Encoders.
 - **Lógica de Reintento**: Si el sistema no encuentra información relevante en la categoría seleccionada, realiza un segundo intento de búsqueda global sin filtros.
 - **Evaluación Integrada**: Cálculo automático de métricas de retrieval (Hit Rate, MRR) y métricas de generación (Fidelidad, Relevancia).
 
