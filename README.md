@@ -16,7 +16,7 @@ El contenido de los PDFs, se organiza en tres categorías principales: laboral, 
 - **Backend**: API construida con **FastAPI** que gestiona el procesamiento, la búsqueda vectorial y la orquestación de modelos.
 - **Búsqueda Híbrida y HyDE**: Mejora la recuperación mediante la generación de respuestas hipotéticas (HyDE) y re-ranking de resultados con Cross-Encoders.
 - **Lógica de Reintento**: Si el sistema no encuentra información relevante en la categoría seleccionada, realiza un segundo intento de búsqueda global sin filtros.
-- **Evaluación Integrada**: Cálculo automático de métricas de retrieval (Hit Rate, MRR) y métricas de generación (Fidelidad, Relevancia).
+- **Evaluación Integrada**: Cálculo automático de métricas de generación (Fidelidad, Relevancia) y métricas de retrieval (Hit Rate, MRR).
 
 ---
 
